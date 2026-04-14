@@ -54,3 +54,22 @@ SUPABASE_SERVICE_ROLE_KEY=
 ```bash
 pnpm dev
 ```
+
+### Add a new feature (for collaborators)
+
+1. Create a new branch using your tools or by using command
+
+```bash
+git switch -c "YOUR_BRANCH_NAME"
+```
+
+2. Do your feature
+3. Commit and push to github
+
+```bash
+git add . # just making sure you add all the needed file to version control
+git commit -m "Commit msg"
+git push
+```
+
+4. Go to the pull request page and create one **targeting the DEV** branch
