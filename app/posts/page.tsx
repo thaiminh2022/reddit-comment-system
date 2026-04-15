@@ -1,3 +1,4 @@
+import PostActionBar from "@/components/posts/PostActionBar";
 import PostCard from "@/components/posts/PostCard";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,7 +34,9 @@ export default async function Page() {
       </Card>
 
       {posts.map((p, i) => (
-        <PostCard post={p} key={i} />
+        <PostCard post={p} key={i}>
+          <PostActionBar post={p} />
+        </PostCard>
       ))}
     </div>
   );

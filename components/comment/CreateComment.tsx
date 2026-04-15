@@ -1,44 +1,37 @@
 "use client";
 
-import { useState } from "react";
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "../ui/card";
-import { Field, FieldLabel } from "../ui/field";
+import { CardAction } from "../ui/card";
 import { Textarea } from "../ui/textarea";
 import { Button } from "../ui/button";
 
-export default function CreateComment() {
-  const [clicked, setClicked] = useState(false);
+interface Props {
+  clicked: boolean;
+  setClicked: (newValue: boolean) => void;
+}
 
+export default function CreateComment({ clicked, setClicked }: Props) {
   return (
     <>
-      <Card>
-        <CardContent>
-          <Button
-            variant={"outline"}
-            type="button"
-            hidden={clicked}
-            onClick={() => setClicked(true)}
-            className="w-full cursor-pointer rounded-full"
-          >
-            Join the conversation
-          </Button>
-          <form hidden={!clicked} className="flex flex-col gap-y-3">
-            <Textarea placeholder="Join the conversation" />
-            <CardAction className="ml-auto">
-              <Button variant="outline" onClick={() => setClicked(false)}>
-                Cancel
-              </Button>
-              <Button type="submit">Submit</Button>
-            </CardAction>
-          </form>
-        </CardContent>
-      </Card>
+      <div className="mx-3">
+        <Button
+          variant={"outline"}
+          type="button"
+          hidden={clicked}
+          onClick={() => setClicked(true)}
+          className="w-full cursor-pointer rounded-full"
+        >
+          Join the conversation
+        </Button>
+        <form hidden={!clicked} className="flex flex-col gap-y-3">
+          <Textarea placeholder="Join the conversation" />
+          <CardAction className="ml-auto">
+            <Button variant="outline" onClick={() => setClicked(false)}>
+              Cancel
+            </Button>
+            <Button type="submit">Submit</Button>
+          </CardAction>
+        </form>
+      </div>
     </>
   );
 }
