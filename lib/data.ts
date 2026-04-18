@@ -56,12 +56,12 @@ export function fetchPosts(): Post[] {
   for (let i = 0; i < 5; i++) {
     posts.push(getFakePost());
   }
-  // console.log(posts);
+  console.log(posts);
   return posts;
 }
 
 export function fetchPost(uuid: string): Post | null {
-  // console.log(posts);
+  console.log(posts);
   for (let i = 0; i < posts.length; i++) {
     if (posts[i].id === uuid) {
       return posts[i];
