@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
-import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
+import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import Link from "next/link";
 
 export default function Page() {
   return (
@@ -18,14 +19,16 @@ export default function Page() {
           <FieldLabel htmlFor="post-content">Content</FieldLabel>
           <Textarea
             id="post-content"
-            placeholder="A beautiful title"
+            placeholder="A beautiful content"
             className="min-h-36"
           />
         </Field>
         <div className="ml-auto flex gap-x-3">
-          <Button type="button" variant={"outline"}>
-            Cancel
-          </Button>
+          <Link href={"/posts"}>
+            <Button type="button" variant={"outline"}>
+              Cancel
+            </Button>
+          </Link>
           <Button type="submit">Submit</Button>
         </div>
       </form>

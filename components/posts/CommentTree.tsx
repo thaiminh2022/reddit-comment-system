@@ -1,4 +1,4 @@
-import { FullComment } from "@/types/posts";
+import { FullComment, FullPost } from "@/types/posts";
 import { CommentCard } from "./CommentCard";
 
 interface CommentTreeProps {

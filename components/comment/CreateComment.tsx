@@ -1,36 +1,40 @@
 "use client";
 
-import { CardAction } from "../ui/card";
-import { Textarea } from "../ui/textarea";
+import CommentReplyBox from "../CommentReplyBox";
 import { Button } from "../ui/button";
 
 interface Props {
-  clicked: boolean;
-  setClicked: (newValue: boolean) => void;
+  replyTo?: string;
+  onSubmit?: () => void;
+  getClicked: () => boolean;
+  setClicked: (value: boolean) => void;
 }
 
-export default function CreateComment({ clicked, setClicked }: Props) {
+export default function CreateComment({
+  replyTo,
+  onSubmit,
+  getClicked,
+  setClicked,
+}: Props) {
   return (
     <>
       <div className="mx-3">
         <Button
           variant={"outline"}
           type="button"
-          hidden={clicked}
+          hidden={getClicked() || replyTo != undefined}
           onClick={() => setClicked(true)}
           className="w-full cursor-pointer rounded-full"
         >
           Join the conversation
         </Button>
-        <form hidden={!clicked} className="flex flex-col gap-y-3">
-          <Textarea placeholder="Join the conversation" />
-          <CardAction className="ml-auto">
-            <Button variant="outline" onClick={() => setClicked(false)}>
-              Cancel
-            </Button>
-            <Button type="submit">Submit</Button>
-          </CardAction>
-        </form>
+        {getClicked() && (
+          <CommentReplyBox
+            onSubmit={onSubmit}
+            replyTo={replyTo}
+            onCancel={() => setClicked(false)}
+          />
+        )}
       </div>
     </>
   );
