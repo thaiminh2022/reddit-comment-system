@@ -1,87 +1,107 @@
 import { FullComment, Post, User } from "@/types/posts";
-import { faker } from "@faker-js/faker";
+import { createClient } from "@/lib/supabase/server";
 
-function getFakePost(): Post {
+export async function fetchPosts(): Promise<any[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("posts")
+    .select(`
+      *,
+      author:profiles!posts_author_id_fkey(id, name)
+    `)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching posts:", error);
+    return [];
+  }
+
+  return data.map(p => ({
+    ...p,
+    created_at: new Date(p.created_at)
+  }));
+}
+
+export async function fetchPost(uuid: string): Promise<any | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("posts")
+    .select(`
+      *,
+      author:profiles!posts_author_id_fkey(id, name)
+    `)
+    .eq("id", uuid)
+    .single();
+
+  if (error) {
+    console.error(`Error fetching post ${uuid}:`, error);
+    return null;
+  }
+
   return {
-    id: faker.string.uuid(),
-    title: faker.lorem.slug(),
-    author_id: faker.string.uuid(),
-    content: faker.lorem.paragraphs(),
-    created_at: faker.date.anytime(),
-    is_deleted: false,
-    total_comment_count: faker.number.int({ min: 0, max: 10 }),
-    score: faker.number.int({ max: 200 }),
+    ...data,
+    created_at: new Date(data.created_at)
   };
 }
 
-function getFakeComment(postID: string, depth: number = 0): FullComment {
-  depth++;
+export async function fetchComments(postID: string): Promise<FullComment[]> {
+  const supabase = await createClient();
+  
+  // Fetch all comments for this post
+  const { data: comments, error } = await supabase
+    .from("comments")
+    .select(`
+      *,
+      author:profiles!comments_author_id_fkey(id, name)
+    `)
+    .eq("post_id", postID)
+    .order("created_at", { ascending: true });
 
-  const uuid = faker.string.uuid();
-  const author: User = {
-    id: faker.string.uuid(),
-    name: faker.internet.username(),
-  };
+  if (error) {
+    console.error(`Error fetching comments for post ${postID}:`, error);
+    return [];
+  }
 
-  const replies: FullComment[] = [];
-  let reply_len = faker.number.int({ min: 0, max: 10 });
-  if (depth < 3) {
-    for (let i = 0; i < reply_len; i++) {
-      const g = getFakeComment(postID, depth);
-      replies.push(g);
+  // Build comment tree
+  const commentMap = new Map<string, FullComment>();
+  const rootComments: FullComment[] = [];
+
+  // Initialize map with comments and empty replies array
+  comments.forEach((c: any) => {
+    commentMap.set(c.id, { 
+      ...c, 
+      created_at: new Date(c.created_at),
+      replies: [] 
+    });
+  });
+
+  // Link children to parents
+  commentMap.forEach((comment) => {
+    if (comment.parent_id) {
+      const parent = commentMap.get(comment.parent_id);
+      if (parent) {
+        parent.replies.push(comment);
+      }
+    } else {
+      rootComments.push(comment);
     }
-  } else {
-    reply_len = 0;
-  }
+  });
 
-  return {
-    id: uuid,
-    parent_id: null,
-    author_id: faker.string.uuid(),
-    post_id: postID,
-    content: faker.lorem.paragraph(),
-    created_at: faker.date.anytime(),
-    is_deleted: false,
-    score: faker.number.int({ max: 200 }),
-    author: author,
-    reply_count: replies.length,
-    replies: replies,
-  };
+  return rootComments;
 }
 
-const posts: Post[] = [];
+export async function fetchUserData(uuid: string): Promise<User | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", uuid)
+    .single();
 
-// THE FUNCTIONs BELOW SHOULD BE REPLACE BY LEGIT FUNCTION
-export function fetchPosts(): Post[] {
-  for (let i = 0; i < 5; i++) {
-    posts.push(getFakePost());
+  if (error) {
+    console.error(`Error fetching user data ${uuid}:`, error);
+    return null;
   }
-  console.log(posts);
-  return posts;
-}
 
-export function fetchPost(uuid: string): Post | null {
-  console.log(posts);
-  for (let i = 0; i < posts.length; i++) {
-    if (posts[i].id === uuid) {
-      return posts[i];
-    }
-  }
-  return getFakePost();
-}
-
-export function fetchComments(uuid: string): FullComment[] {
-  let commentCount = faker.number.int({ min: 0, max: 5 });
-  const comments = [];
-  for (let i = 0; i < commentCount; i++) {
-    comments.push(getFakeComment(uuid));
-  }
-  return comments;
-}
-
-export function fetchUserData(uuid: string): User {
-  return {
-    id: uuid,
-    name: faker.internet.username(),
-  };
+  return data as User;
 }
