@@ -1,4 +1,3 @@
-import { fetchUserData } from "@/lib/data";
 import { Post } from "@/types/posts";
 import {
   Card,
@@ -10,18 +9,17 @@ import {
 } from "../ui/card";
 
 interface Props {
-  post: Post;
+  post: Post & { author?: { name: string } };
   children?: React.ReactNode | React.ReactNode[];
 }
 
 export default function PostCard({ post, children }: Props) {
-  const user = fetchUserData(post.author_id);
   return (
     <>
       <Card>
         <CardHeader>
           <CardTitle>{post.title}</CardTitle>
-          <CardDescription>Author: {user.name}</CardDescription>
+          <CardDescription>Author: {post.author?.name || "Unknown"}</CardDescription>
         </CardHeader>
         <CardContent>{post.content}</CardContent>
         <CardAction className="w-full">{children}</CardAction>
