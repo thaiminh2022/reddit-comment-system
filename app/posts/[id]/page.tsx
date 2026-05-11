@@ -7,12 +7,12 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
   const id = params.id;
 
-  const post = fetchPost(id);
+  const post = await fetchPost(id);
   if (post === null) {
     return <>No Post</>;
   }
 
-  const comments = fetchComments(id);
+  const comments = await fetchComments(id);
 
   return (
     <div className="flex flex-col gap-y-5">
