@@ -5,7 +5,7 @@ const UserSchema = z.object({
   name: z.string(),
 });
 
-const PostSchema = z.object({
+export const PostSchema = z.object({
   id: z.uuid(),
   title: z.string(),
   author_id: z.uuid(),
@@ -14,6 +14,13 @@ const PostSchema = z.object({
   is_deleted: z.boolean(),
   total_comment_count: z.int().min(0),
   score: z.int(),
+});
+export const PostInsertSchema = PostSchema.omit({
+  id: true,
+  created_at: true,
+  is_deleted: true,
+  total_comment_count: true,
+  score: true,
 });
 
 const PostVoteSchema = z.object({

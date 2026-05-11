@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { fetchPosts } from "@/lib/data";
+import { fetchPosts } from "@/lib/actions/data";
 import Link from "next/link";
 import { ImPen } from "react-icons/im";
 

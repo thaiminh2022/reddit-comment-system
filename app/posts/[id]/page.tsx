@@ -1,7 +1,7 @@
 import PostCommentActionBar from "@/components/comment/PostCommentActionBar";
 import { CommentTree } from "@/components/posts/CommentTree";
 import PostCard from "@/components/posts/PostCard";
-import { fetchComments, fetchPost } from "@/lib/data";
+import { fetchComments, fetchPost } from "@/lib/actions/data";
 
 export default async function Page(props: { params: Promise<{ id: string }> }) {
   const params = await props.params;

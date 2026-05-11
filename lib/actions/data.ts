@@ -1,14 +1,27 @@
-import { FullComment, Post, User } from "@/types/posts";
+"use server";
+
 import { createClient } from "@/lib/supabase/server";
+import {
+  ActionResState,
+  createErrorResponse,
+  createSuccessResponse,
+} from "@/types/error_handler";
+import { FullComment, Post, PostInsertSchema, User } from "@/types/posts";
+import { AuthError, PostgrestError } from "@supabase/supabase-js";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { z } from "zod";
 
 export async function fetchPosts(): Promise<any[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("posts")
-    .select(`
+    .select(
+      `
       *,
       author:profiles!posts_author_id_fkey(id, name)
-    `)
+    `,
+    )
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -16,9 +29,9 @@ export async function fetchPosts(): Promise<any[]> {
     return [];
   }
 
-  return data.map(p => ({
+  return data.map((p) => ({
     ...p,
-    created_at: new Date(p.created_at)
+    created_at: new Date(p.created_at),
   }));
 }
 
@@ -26,10 +39,12 @@ export async function fetchPost(uuid: string): Promise<any | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("posts")
-    .select(`
+    .select(
+      `
       *,
       author:profiles!posts_author_id_fkey(id, name)
-    `)
+    `,
+    )
     .eq("id", uuid)
     .single();
 
@@ -40,20 +55,22 @@ export async function fetchPost(uuid: string): Promise<any | null> {
 
   return {
     ...data,
-    created_at: new Date(data.created_at)
+    created_at: new Date(data.created_at),
   };
 }
 
 export async function fetchComments(postID: string): Promise<FullComment[]> {
   const supabase = await createClient();
-  
+
   // Fetch all comments for this post
   const { data: comments, error } = await supabase
     .from("comments")
-    .select(`
+    .select(
+      `
       *,
       author:profiles!comments_author_id_fkey(id, name)
-    `)
+    `,
+    )
     .eq("post_id", postID)
     .order("created_at", { ascending: true });
 
@@ -68,10 +85,10 @@ export async function fetchComments(postID: string): Promise<FullComment[]> {
 
   // Initialize map with comments and empty replies array
   comments.forEach((c: any) => {
-    commentMap.set(c.id, { 
-      ...c, 
+    commentMap.set(c.id, {
+      ...c,
       created_at: new Date(c.created_at),
-      replies: [] 
+      replies: [],
     });
   });
 
@@ -104,4 +121,48 @@ export async function fetchUserData(uuid: string): Promise<User | null> {
   }
 
   return data as User;
+}
+
+export async function createPost(
+  prevState: unknown,
+  form: FormData,
+): Promise<ActionResState<Post, AuthError | PostgrestError | z.ZodError>> {
+  const supabase = await createClient();
+  const userRes = await supabase.auth.getUser();
+  if (userRes.error) {
+    console.error("Error fetching user:", userRes.error);
+    return createErrorResponse(userRes.error.message, userRes.error);
+  }
+  const title = form.get("title") as string;
+  const content = form.get("content") as string;
+  const author_id = userRes.data.user.id;
+
+  console.log("Creating post with data:", { title, content, author_id });
+
+  const postInsert = PostInsertSchema.safeParse({
+    title,
+    content,
+    author_id,
+  });
+
+  if (!postInsert.success) {
+    console.error("Error creating post:", postInsert.error);
+    return createErrorResponse(postInsert.error.message, postInsert.error);
+  }
+
+  const post = postInsert.data;
+  const { data, error } = await supabase
+    .from("posts")
+    .insert(post)
+    .select("*")
+    .single();
+
+  if (error) {
+    console.error("Error creating post:", error);
+    return createErrorResponse(error.message, error);
+  }
+
+  revalidatePath("/posts");
+  redirect("/posts");
+  return createSuccessResponse(data as Post);
 }
