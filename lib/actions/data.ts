@@ -12,7 +12,9 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
-export async function fetchPosts(): Promise<any[]> {
+type PostAndUser = Post & User;
+
+export async function fetchPosts() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("posts")
@@ -26,13 +28,11 @@ export async function fetchPosts(): Promise<any[]> {
 
   if (error) {
     console.error("Error fetching posts:", error);
-    return [];
+    return createErrorResponse(error.message, error);
   }
 
-  return data.map((p) => ({
-    ...p,
-    created_at: new Date(p.created_at),
-  }));
+  const posts = data as PostAndUser[];
+  return createSuccessResponse(posts);
 }
 
 export async function fetchPost(uuid: string): Promise<any | null> {
@@ -124,7 +124,7 @@ export async function fetchUserData(uuid: string): Promise<User | null> {
 }
 
 export async function createPost(
-  prevState: unknown,
+  _: unknown,
   form: FormData,
 ): Promise<ActionResState<Post, AuthError | PostgrestError | z.ZodError>> {
   const supabase = await createClient();

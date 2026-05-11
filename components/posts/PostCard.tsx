@@ -19,7 +19,9 @@ export default function PostCard({ post, children }: Props) {
       <Card>
         <CardHeader>
           <CardTitle>{post.title}</CardTitle>
-          <CardDescription>Author: {post.author?.name || "Unknown"}</CardDescription>
+          <CardDescription>
+            Author: {post.author?.name || "Unknown"}
+          </CardDescription>
         </CardHeader>
         <CardContent>{post.content}</CardContent>
         <CardAction className="w-full">{children}</CardAction>

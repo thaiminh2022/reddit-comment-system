@@ -13,7 +13,16 @@ import Link from "next/link";
 import { ImPen } from "react-icons/im";
 
 export default async function Page() {
-  const posts = await fetchPosts();
+  const postsRes = await fetchPosts();
+  if (!postsRes.is_success) {
+    return (
+      <div className="rounded-md p-2  bg-red-100">
+        Error fetching posts: {postsRes.message}
+      </div>
+    );
+  }
+
+  const posts = postsRes.data;
 
   return (
     <div className="flex flex-col gap-y-5">
