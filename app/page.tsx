@@ -11,7 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { authenticateUser } from "@/lib/actions/auth";
 import { Loader2, Sparkles, User } from "lucide-react";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 
 const RANDOM_NAMES = ["Alex", "Jordan", "Charlie", "Skyler", "Robin"];
 
@@ -23,24 +23,16 @@ export default function HomePage() {
       const result = await authenticateUser(formData);
       return result ?? null;
     },
-    null
+    null,
   );
 
-  const handleRandomize = () => {
-    const input = document.getElementById("username-input") as HTMLInputElement;
-    if (input) {
-      const randomName =
-        RANDOM_NAMES[Math.floor(Math.random() * RANDOM_NAMES.length)];
-      // Use native setter to trigger React's controlled value update
-      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-        window.HTMLInputElement.prototype,
-        "value"
-      )?.set;
-      nativeInputValueSetter?.call(input, randomName);
-      input.dispatchEvent(new Event("input", { bubbles: true }));
-    }
-  };
+  const [username, setUsername] = useState("");
 
+  const handleRandomize = () => {
+    const randomName =
+      RANDOM_NAMES[Math.floor(Math.random() * RANDOM_NAMES.length)];
+    setUsername(randomName);
+  };
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4">
       {/* Website Identity */}
@@ -72,6 +64,8 @@ export default function HomePage() {
                   className="pl-10 focus-visible:ring-blue-600"
                   required
                   disabled={isPending}
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                 />
               </div>
 

@@ -20,6 +20,11 @@ export default async function Page() {
       <Card className="mb-3">
         <CardHeader>
           <CardTitle className="font-bold text-3xl">Posts</CardTitle>
+          <CardAction>
+            <Link href={"/auth/logout"}>
+              <Button variant="outline">Logoff</Button>
+            </Link>
+          </CardAction>
         </CardHeader>
         <CardContent>
           <CardAction className="w-full">
