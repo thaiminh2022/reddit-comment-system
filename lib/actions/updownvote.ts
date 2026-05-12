@@ -17,6 +17,8 @@ import { createClient } from "../supabase/server";
 // 0: no vote
 
 export type VoteState = "up" | "down" | "not-voted";
+export type CommentVoteStates = Record<string, VoteState>;
+
 export async function getPostVoteState(post_id: string) {
   const userRes = await getUser();
 
@@ -25,7 +27,7 @@ export async function getPostVoteState(post_id: string) {
   }
 
   const supabase = await createClient();
-  let { data, error } = await supabase
+  const { data, error } = await supabase
     .from("post_votes")
     .select("*")
     .eq("user_id", userRes.data.id)
@@ -56,7 +58,7 @@ export async function getCommentVoteState(commentId: string) {
   }
 
   const supabase = await createClient();
-  let { data, error } = await supabase
+  const { data, error } = await supabase
     .from("comment_votes")
     .select("*")
     .eq("user_id", userRes.data.id)
@@ -77,6 +79,36 @@ export async function getCommentVoteState(commentId: string) {
   } else {
     return createSuccessResponse<VoteState>("up");
   }
+}
+
+export async function getCommentVoteStates(commentIds: string[]) {
+  const userRes = await getUser();
+
+  if (!userRes.is_success) {
+    return userRes;
+  }
+
+  if (commentIds.length === 0) {
+    return createSuccessResponse<CommentVoteStates>({});
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("comment_votes")
+    .select("comment_id, value")
+    .eq("user_id", userRes.data.id)
+    .in("comment_id", commentIds);
+
+  if (error) {
+    return createErrorResponse(error.message, error);
+  }
+
+  const voteStates: CommentVoteStates = {};
+  for (const vote of data as Pick<CommentVoteRow, "comment_id" | "value">[]) {
+    voteStates[vote.comment_id] = vote.value === -1 ? "down" : "up";
+  }
+
+  return createSuccessResponse(voteStates);
 }
 
 export async function setVotePost(postId: string, voteState: VoteState) {
@@ -136,7 +168,7 @@ export async function setVoteComment(commentId: string, voteState: VoteState) {
 
   if (voteState === "not-voted") {
     const { error } = await supabase
-      .from("post_votes")
+      .from("comment_votes")
       .delete()
       .eq("user_id", userRes.data.id)
       .eq("comment_id", commentId);
@@ -150,16 +182,16 @@ export async function setVoteComment(commentId: string, voteState: VoteState) {
 
   const value = voteState === "up" ? 1 : -1;
 
-  const postVote: CommentVoteInsert = {
+  const commentVote: CommentVoteInsert = {
     value,
     user_id: userRes.data.id,
     comment_id: commentId,
   };
 
   const { data, error } = await supabase
-    .from("post_votes")
-    .upsert(postVote, {
-      onConflict: "comment_id,post_id",
+    .from("comment_votes")
+    .upsert(commentVote, {
+      onConflict: "comment_id,user_id",
     })
     .select()
     .single();

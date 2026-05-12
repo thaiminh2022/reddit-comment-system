@@ -1,16 +1,22 @@
 "use client";
+import type { CommentVoteStates } from "@/lib/actions/updownvote";
 import { CommentRoot } from "@/types/posts";
 import { useState } from "react";
 import CommentPill from "../../CommentPill";
 import CreateComment from "../../CreateComment";
-import CommentVotePillServer from "./CommentVotePillServer";
+import { CommentVotePill } from "./CommentVotePill";
 
 interface CommentProps {
   postId: string;
   comment: CommentRoot;
+  commentVoteStates: CommentVoteStates;
 }
 
-export const CommentCard: React.FC<CommentProps> = ({ postId, comment }) => {
+export const CommentCard: React.FC<CommentProps> = ({
+  postId,
+  comment,
+  commentVoteStates,
+}) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [clickedReply, setClickedReply] = useState(false);
 
@@ -41,7 +47,11 @@ export const CommentCard: React.FC<CommentProps> = ({ postId, comment }) => {
                 : `Show ${comment.replies?.length} Replies`}
             </button>
           )}
-          <CommentVotePillServer commentId={comment.id} score={comment.score} />
+          <CommentVotePill
+            commentId={comment.id}
+            score={comment.score}
+            voteState={commentVoteStates[comment.id] ?? "not-voted"}
+          />
           <CommentPill onClick={() => setClickedReply(true)} />
         </div>
         <CreateComment
@@ -57,7 +67,12 @@ export const CommentCard: React.FC<CommentProps> = ({ postId, comment }) => {
       {isExpanded && hasReplies && (
         <div className="ml-2">
           {comment.replies.map((reply) => (
-            <CommentCard key={reply.id} postId={postId} comment={reply} />
+            <CommentCard
+              key={reply.id}
+              postId={postId}
+              comment={reply}
+              commentVoteStates={commentVoteStates}
+            />
           ))}
         </div>
       )}
