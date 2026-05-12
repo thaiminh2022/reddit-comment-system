@@ -1,6 +1,7 @@
 import LogoutButton from "@/components/LogoutButton";
 import PostActionBar from "@/components/posts/PostActionBar";
 import PostCard from "@/components/posts/PostCard";
+import PostSortDropdown from "@/components/posts/PostSortDropdown";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -10,11 +11,17 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { fetchPostJoinAuthorRows } from "@/lib/actions/data";
+import { parsePostSort } from "@/lib/posts/sort";
 import { IconPencil } from "@tabler/icons-react";
 import Link from "next/link";
 
-export default async function Page() {
-  const postsRes = await fetchPostJoinAuthorRows();
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const sort = parsePostSort((await searchParams).sort);
+  const postsRes = await fetchPostJoinAuthorRows(sort);
   if (!postsRes.is_success) {
     return (
       <div className="rounded-md p-2  bg-red-100">
@@ -46,8 +53,9 @@ export default async function Page() {
         </CardContent>
       </Card>
 
-      {/* Filter by */}
-      <div></div>
+      <div className="flex justify-end">
+        <PostSortDropdown value={sort} />
+      </div>
 
       {posts.map((p, i) => (
         <PostCard post={p} key={i}>
