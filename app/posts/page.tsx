@@ -1,5 +1,6 @@
 import LogoutButton from "@/components/LogoutButton";
 import InfinitePostList from "@/components/posts/InfinitePostList";
+import PostSortDropdown from "@/components/posts/PostSortDropdown";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -8,7 +9,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { fetchPostJoinAuthorRows, SortOrder } from "@/lib/actions/data";
+import { fetchPostJoinAuthorRows } from "@/lib/actions/data";
+import { parsePostSort } from "@/lib/posts/sort";
 import { getPostVoteStates } from "@/lib/actions/updownvote";
 import { IconPencil, IconSortDescending, IconTrendingUp } from "@tabler/icons-react";
 import Link from "next/link";
@@ -16,13 +18,13 @@ import Link from "next/link";
 export default async function Page({
   searchParams,
 }: {
-  searchParams: Promise<{ cursor?: string; sort?: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const params = await searchParams;
-  const sort = (params.sort as SortOrder) || "new";
+  const sort = parsePostSort(params.sort);
   const pageSize = 10;
 
-  // Fetch initial posts on the server
+  // Fetch initial posts on the server using cursor-based logic
   const postsRes = await fetchPostJoinAuthorRows(undefined, pageSize, sort);
   if (!postsRes.is_success) {
     return (
@@ -51,13 +53,13 @@ export default async function Page({
         <CardContent>
           <div className="flex justify-between items-center w-full gap-4">
             <div className="flex gap-2">
-              <Link href="/posts?sort=new">
-                <Button variant={sort === "new" ? "default" : "outline"} size="sm">
+              <Link href="/posts?sort=newest">
+                <Button variant={sort === "newest" ? "default" : "outline"} size="sm">
                   <IconSortDescending size={18} className="mr-1" /> New
                 </Button>
               </Link>
-              <Link href="/posts?sort=top">
-                <Button variant={sort === "top" ? "default" : "outline"} size="sm">
+              <Link href="/posts?sort=top-all-time">
+                <Button variant={sort === "top-all-time" ? "default" : "outline"} size="sm">
                   <IconTrendingUp size={18} className="mr-1" /> Top
                 </Button>
               </Link>
@@ -71,6 +73,10 @@ export default async function Page({
           </div>
         </CardContent>
       </Card>
+
+      <div className="flex justify-end">
+        <PostSortDropdown value={sort} />
+      </div>
 
       {posts.length === 0 ? (
         <div className="text-center py-10 text-muted-foreground">

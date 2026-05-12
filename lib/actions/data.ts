@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import type { PostSort } from "@/lib/posts/sort";
 import {
   CommentInsertSchema,
   CommentJoinAuthor,
@@ -19,8 +20,6 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
-export type SortOrder = "new" | "top";
-
 function encodeCursor(data: any): string {
   return Buffer.from(JSON.stringify(data)).toString("base64");
 }
@@ -36,7 +35,7 @@ function decodeCursor(cursor: string): any {
 export async function fetchPostJoinAuthorRows(
   cursor?: string,
   pageSize: number = 10,
-  sort: SortOrder = "new",
+  sort: PostSort = "newest",
 ) {
   const supabase = await createClient();
   const decoded = cursor ? decodeCursor(cursor) : null;
@@ -49,26 +48,47 @@ export async function fetchPostJoinAuthorRows(
       author:profiles!posts_author_id_fkey(id, name)
     `,
     )
-    .limit(pageSize + 1); // Fetch one extra to check for next page
+    .limit(pageSize + 1);
 
-  if (sort === "new") {
-    query = query.order("created_at", { ascending: false }).order("id", {
-      ascending: false,
-    });
+  // Time filters for Top sorts
+  if (sort === "top-past-year") {
+    query = query.gte("created_at", getIsoDateMonthsAgo(12));
+  } else if (sort === "top-past-month") {
+    query = query.gte("created_at", getIsoDateMonthsAgo(1));
+  }
+
+  // Sorting and Cursor logic
+  if (sort === "newest") {
+    query = query.order("created_at", { ascending: false }).order("id", { ascending: false });
     if (decoded) {
-      // (created_at, id) < (decoded.created_at, decoded.id)
+      query = query.or(`created_at.lt.${decoded.created_at},and(created_at.eq.${decoded.created_at},id.lt.${decoded.id})`);
+    }
+  } else if (sort === "hot") {
+    query = query
+      .order("total_comment_count", { ascending: false })
+      .order("score", { ascending: false })
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false });
+    
+    if (decoded) {
       query = query.or(
-        `created_at.lt.${decoded.created_at},and(created_at.eq.${decoded.created_at},id.lt.${decoded.id})`,
+        `total_comment_count.lt.${decoded.total_comment_count},` +
+        `and(total_comment_count.eq.${decoded.total_comment_count},score.lt.${decoded.score}),` +
+        `and(total_comment_count.eq.${decoded.total_comment_count},score.eq.${decoded.score},created_at.lt.${decoded.created_at}),` +
+        `and(total_comment_count.eq.${decoded.total_comment_count},score.eq.${decoded.score},created_at.eq.${decoded.created_at},id.lt.${decoded.id})`
       );
     }
-  } else if (sort === "top") {
+  } else if (sort.startsWith("top-")) {
     query = query
       .order("score", { ascending: false })
       .order("created_at", { ascending: false })
       .order("id", { ascending: false });
+
     if (decoded) {
       query = query.or(
-        `score.lt.${decoded.score},and(score.eq.${decoded.score},created_at.lt.${decoded.created_at}),and(score.eq.${decoded.score},created_at.eq.${decoded.created_at},id.lt.${decoded.id})`,
+        `score.lt.${decoded.score},` +
+        `and(score.eq.${decoded.score},created_at.lt.${decoded.created_at}),` +
+        `and(score.eq.${decoded.score},created_at.eq.${decoded.created_at},id.lt.${decoded.id})`
       );
     }
   }
@@ -93,8 +113,9 @@ export async function fetchPostJoinAuthorRows(
     const lastPost = resultPosts[resultPosts.length - 1];
     nextCursor = encodeCursor({
       id: lastPost.id,
-      created_at: lastPost.created_at,
+      created_at: lastPost.created_at.toISOString(),
       score: lastPost.score,
+      total_comment_count: lastPost.total_comment_count
     });
   }
 
@@ -103,6 +124,12 @@ export async function fetchPostJoinAuthorRows(
     nextCursor,
     pageSize,
   });
+}
+
+function getIsoDateMonthsAgo(months: number) {
+  const date = new Date();
+  date.setMonth(date.getMonth() - months);
+  return date.toISOString();
 }
 
 export async function fetchPostJoinAuthorRow(uuid: string) {
