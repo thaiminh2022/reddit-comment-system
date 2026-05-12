@@ -1,21 +1,16 @@
-import { getPostVoteState } from "@/lib/actions/updownvote";
 import { PostRow } from "@/types/db_schema";
 import { IconBubblePlus } from "@tabler/icons-react";
 import Link from "next/link";
 import { Button } from "../ui/button";
 import { PostVotePill } from "./PostVotePill";
+import { VoteState } from "@/lib/actions/updownvote";
 
 interface Props {
   post: PostRow;
+  voteState: VoteState;
 }
-export default async function PostActionBar({ post }: Props) {
-  const postVoteStateRes = await getPostVoteState(post.id);
-  if (!postVoteStateRes.is_success) {
-    return <>Cannot fetch vote: {postVoteStateRes.message} </>;
-  }
 
-  const voteState = postVoteStateRes.data;
-
+export default function PostActionBar({ post, voteState }: Props) {
   return (
     <div className="flex">
       <PostVotePill post={post} voteState={voteState} />
