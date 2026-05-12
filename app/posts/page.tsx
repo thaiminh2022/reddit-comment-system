@@ -1,6 +1,7 @@
 import LogoutButton from "@/components/LogoutButton";
 import InfinitePostList from "@/components/posts/InfinitePostList";
 import PostSortDropdown from "@/components/posts/PostSortDropdown";
+import SearchBar from "@/components/SearchBar";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -22,10 +23,11 @@ export default async function Page({
 }) {
   const params = await searchParams;
   const sort = parsePostSort(params.sort);
+  const search = typeof params.q === "string" ? params.q : undefined;
   const pageSize = 10;
 
   // Fetch initial posts on the server using cursor-based logic
-  const postsRes = await fetchPostJoinAuthorRows(undefined, pageSize, sort);
+  const postsRes = await fetchPostJoinAuthorRows(undefined, pageSize, sort, search);
   if (!postsRes.is_success) {
     return (
       <div className="rounded-md p-2  bg-red-100">
@@ -51,25 +53,28 @@ export default async function Page({
           </CardAction>
         </CardHeader>
         <CardContent>
-          <div className="flex justify-between items-center w-full gap-4">
-            <div className="flex gap-2">
-              <Link href="/posts?sort=newest">
-                <Button variant={sort === "newest" ? "default" : "outline"} size="sm">
-                  <IconSortDescending size={18} className="mr-1" /> New
-                </Button>
-              </Link>
-              <Link href="/posts?sort=top-all-time">
-                <Button variant={sort === "top-all-time" ? "default" : "outline"} size="sm">
-                  <IconTrendingUp size={18} className="mr-1" /> Top
+          <div className="flex flex-col md:flex-row justify-between items-center w-full gap-4">
+            <SearchBar placeholder="Search posts..." className="w-full md:w-1/2" />
+            <div className="flex justify-between items-center w-full md:w-auto gap-4">
+              <div className="flex gap-2">
+                <Link href="/posts?sort=newest">
+                  <Button variant={sort === "newest" ? "default" : "outline"} size="sm">
+                    <IconSortDescending size={18} className="mr-1" /> New
+                  </Button>
+                </Link>
+                <Link href="/posts?sort=top-all-time">
+                  <Button variant={sort === "top-all-time" ? "default" : "outline"} size="sm">
+                    <IconTrendingUp size={18} className="mr-1" /> Top
+                  </Button>
+                </Link>
+              </div>
+              <Link href={"/posts/create"}>
+                <Button className="cursor-pointer">
+                  <IconPencil />
+                  Create Post
                 </Button>
               </Link>
             </div>
-            <Link href={"/posts/create"}>
-              <Button className="cursor-pointer">
-                <IconPencil />
-                Create Post
-              </Button>
-            </Link>
           </div>
         </CardContent>
       </Card>
@@ -80,7 +85,7 @@ export default async function Page({
 
       {posts.length === 0 ? (
         <div className="text-center py-10 text-muted-foreground">
-          No posts found.
+          {search ? `No posts matching "${search}"` : "No posts found."}
         </div>
       ) : (
         <InfinitePostList
@@ -88,6 +93,7 @@ export default async function Page({
           initialCursor={nextCursor}
           initialVoteStates={initialVoteStates}
           sort={sort}
+          search={search}
         />
       )}
     </div>
