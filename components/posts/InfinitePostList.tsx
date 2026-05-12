@@ -4,7 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { PostJoinAuthor } from "@/types/db_schema";
 import PostCard from "./PostCard";
 import PostActionBar from "./PostActionBar";
-import { fetchPostJoinAuthorRows, SortOrder } from "@/lib/actions/data";
+import { fetchPostJoinAuthorRows } from "@/lib/actions/data";
+import { PostSort } from "@/lib/posts/sort";
 import { getPostVoteStates, VoteState } from "@/lib/actions/updownvote";
 import { IconLoader2 } from "@tabler/icons-react";
 
@@ -12,7 +13,7 @@ interface Props {
   initialPosts: PostJoinAuthor[];
   initialCursor: string | null;
   initialVoteStates: Record<string, VoteState>;
-  sort: SortOrder;
+  sort: PostSort;
 }
 
 export default function InfinitePostList({
