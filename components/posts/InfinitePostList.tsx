@@ -14,6 +14,7 @@ interface Props {
   initialCursor: string | null;
   initialVoteStates: Record<string, VoteState>;
   sort: PostSort;
+  search?: string;
 }
 
 export default function InfinitePostList({
@@ -21,6 +22,7 @@ export default function InfinitePostList({
   initialCursor,
   initialVoteStates,
   sort,
+  search,
 }: Props) {
   const [posts, setPosts] = useState<PostJoinAuthor[]>(initialPosts);
   const [cursor, setCursor] = useState<string | null>(initialCursor);
@@ -28,12 +30,12 @@ export default function InfinitePostList({
   const [isLoading, setIsLoading] = useState(false);
   const loaderRef = useRef<HTMLDivElement>(null);
 
-  // Sync state with props when sort changes (Server Component re-renders)
+  // Sync state with props when sort or search changes (Server Component re-renders)
   useEffect(() => {
     setPosts(initialPosts);
     setCursor(initialCursor);
     setVoteStates(initialVoteStates);
-  }, [initialPosts, initialCursor, initialVoteStates, sort]);
+  }, [initialPosts, initialCursor, initialVoteStates, sort, search]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -41,7 +43,7 @@ export default function InfinitePostList({
         const firstEntry = entries[0];
         if (firstEntry.isIntersecting && cursor && !isLoading) {
           setIsLoading(true);
-          const res = await fetchPostJoinAuthorRows(cursor, 10, sort);
+          const res = await fetchPostJoinAuthorRows(cursor, 10, sort, search);
           if (res.is_success) {
             const newPosts = res.data.posts;
             
