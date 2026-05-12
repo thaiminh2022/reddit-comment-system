@@ -1,6 +1,11 @@
 "use server";
 
-import { PostVoteInsert, PostVoteRow } from "@/types/db_schema";
+import {
+  CommentVoteInsert,
+  CommentVoteRow,
+  PostVoteInsert,
+  PostVoteRow,
+} from "@/types/db_schema";
 import {
   createErrorResponse,
   createSuccessResponse,
@@ -37,6 +42,37 @@ export async function getPostVoteState(post_id: string) {
     return createSuccessResponse<VoteState>("not-voted");
   }
   if (postVote.value == -1) {
+    return createSuccessResponse<VoteState>("down");
+  } else {
+    return createSuccessResponse<VoteState>("up");
+  }
+}
+
+export async function getCommentVoteState(commentId: string) {
+  const userRes = await getUser();
+
+  if (!userRes.is_success) {
+    return userRes;
+  }
+
+  const supabase = await createClient();
+  let { data, error } = await supabase
+    .from("comment_votes")
+    .select("*")
+    .eq("user_id", userRes.data.id)
+    .eq("comment_id", commentId)
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    return createErrorResponse(error.message, error);
+  }
+
+  const commentVote = data as CommentVoteRow | null;
+  if (commentVote == null) {
+    return createSuccessResponse<VoteState>("not-voted");
+  }
+  if (commentVote.value == -1) {
     return createSuccessResponse<VoteState>("down");
   } else {
     return createSuccessResponse<VoteState>("up");
@@ -87,6 +123,52 @@ export async function setVotePost(postId: string, voteState: VoteState) {
   }
 
   return createSuccessResponse(data as PostVoteRow);
+}
+
+export async function setVoteComment(commentId: string, voteState: VoteState) {
+  const userRes = await getUser();
+
+  if (!userRes.is_success) {
+    return createErrorResponse("You must be logged in to vote");
+  }
+
+  const supabase = await createClient();
+
+  if (voteState === "not-voted") {
+    const { error } = await supabase
+      .from("post_votes")
+      .delete()
+      .eq("user_id", userRes.data.id)
+      .eq("comment_id", commentId);
+
+    if (error) {
+      return createErrorResponse(error.message, error);
+    }
+
+    return createSuccessResponse(null);
+  }
+
+  const value = voteState === "up" ? 1 : -1;
+
+  const postVote: CommentVoteInsert = {
+    value,
+    user_id: userRes.data.id,
+    comment_id: commentId,
+  };
+
+  const { data, error } = await supabase
+    .from("post_votes")
+    .upsert(postVote, {
+      onConflict: "comment_id,post_id",
+    })
+    .select()
+    .single();
+
+  if (error) {
+    return createErrorResponse(error.message, error);
+  }
+
+  return createSuccessResponse(data as CommentVoteRow);
 }
 
 async function getUser() {

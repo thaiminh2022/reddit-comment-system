@@ -1,8 +1,8 @@
 "use client";
 
 import { createComment } from "@/lib/actions/data";
-import CommentReplyBox from "../CommentReplyBox";
-import { Button } from "../ui/button";
+import CommentReplyBox from "./CommentReplyBox";
+import { Button } from "./ui/button";
 
 interface Props {
   postId: string;

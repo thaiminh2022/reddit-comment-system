@@ -3,7 +3,7 @@ import { PostRow } from "@/types/db_schema";
 import { IconBubblePlus } from "@tabler/icons-react";
 import Link from "next/link";
 import { Button } from "../ui/button";
-import { OuterVoteButton } from "./OuterVoteButton";
+import { PostVotePill } from "./PostVotePill";
 
 interface Props {
   post: PostRow;
@@ -18,7 +18,7 @@ export default async function PostActionBar({ post }: Props) {
 
   return (
     <div className="flex">
-      <OuterVoteButton post={post} voteState={voteState} />
+      <PostVotePill post={post} voteState={voteState} />
       <OuterCommentButton post={post} />
     </div>
   );

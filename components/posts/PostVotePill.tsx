@@ -12,7 +12,7 @@ import { startTransition, useOptimistic } from "react";
 import { toast } from "sonner";
 import { Button } from "../ui/button";
 
-interface OuterVoteButtonProps {
+interface VotePillProps {
   post: PostRow;
   voteState: VoteState;
 }
@@ -22,7 +22,7 @@ type OptimisticScore = {
   userVote: VoteState;
 };
 
-export function OuterVoteButton({ post, voteState }: OuterVoteButtonProps) {
+export function PostVotePill({ post, voteState }: VotePillProps) {
   const [optimisticVote, setOptimisticVote] = useOptimistic<
     OptimisticScore,
     VoteState

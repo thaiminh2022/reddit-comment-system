@@ -1,8 +1,9 @@
 "use client";
 import { CommentRoot } from "@/types/posts";
 import { useState } from "react";
-import CommentPill from "../CommentPill";
-import CreateComment from "../comment/CreateComment";
+import CommentPill from "../../CommentPill";
+import CreateComment from "../../CreateComment";
+import CommentVotePillServer from "./CommentVotePillServer";
 
 interface CommentProps {
   postId: string;
@@ -40,7 +41,7 @@ export const CommentCard: React.FC<CommentProps> = ({ postId, comment }) => {
                 : `Show ${comment.replies?.length} Replies`}
             </button>
           )}
-
+          <CommentVotePillServer commentId={comment.id} score={comment.score} />
           <CommentPill onClick={() => setClickedReply(true)} />
         </div>
         <CreateComment
@@ -55,7 +56,7 @@ export const CommentCard: React.FC<CommentProps> = ({ postId, comment }) => {
       {/* Recursive Render: If expanded and has replies, render them */}
       {isExpanded && hasReplies && (
         <div className="ml-2">
-          {comment.replies!.map((reply) => (
+          {comment.replies.map((reply) => (
             <CommentCard key={reply.id} postId={postId} comment={reply} />
           ))}
         </div>

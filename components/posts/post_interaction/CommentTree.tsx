@@ -6,7 +6,10 @@ interface CommentTreeProps {
   comments: CommentRoot[];
 }
 
-export const CommentTree: React.FC<CommentTreeProps> = ({ postId, comments }) => {
+export const CommentTree: React.FC<CommentTreeProps> = ({
+  postId,
+  comments,
+}) => {
   return (
     <div className="p-4 bg-white rounded-lg shadow">
       <h2 className="text-xl font-bold mb-6">Discussion</h2>
