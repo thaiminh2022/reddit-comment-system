@@ -3,6 +3,7 @@
 import { createComment } from "@/lib/actions/data";
 import CommentReplyBox from "./CommentReplyBox";
 import { Button } from "./ui/button";
+import { toast } from "sonner";
 
 interface Props {
   postId: string;
@@ -20,8 +21,14 @@ export default function CreateComment({
   setClicked,
 }: Props) {
   const submitAction = async (formData: FormData) => {
-    await createComment(postId, parentId, formData);
-    setClicked(false);
+    const res = await createComment(postId, parentId, formData);
+    
+    if (res.is_success) {
+      toast.success(parentId ? "Reply posted!" : "Comment posted!");
+      setClicked(false);
+    } else {
+      toast.error(res.message || "Failed to post comment");
+    }
   };
 
   return (
@@ -32,9 +39,9 @@ export default function CreateComment({
           type="button"
           hidden={getClicked() || replyTo != undefined}
           onClick={() => setClicked(true)}
-          className="w-full cursor-pointer rounded-full"
+          className="w-full cursor-pointer rounded-full border-gray-300 hover:bg-gray-50 text-gray-500 justify-start px-4"
         >
-          Join the conversation
+          Add a comment
         </Button>
         {getClicked() && (
           <CommentReplyBox
