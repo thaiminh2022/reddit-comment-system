@@ -1,5 +1,3 @@
-import { UserRow } from "./db_schema";
-
 export type Profile = {
   id: string;
   name: string;
@@ -19,7 +17,7 @@ export type Post = {
 
 export type Comment = {
   id: string;
-  parent: Comment | null;
+  parent_id: string | null;
   author: Profile;
   content: string;
   created_at: Date;
@@ -29,5 +27,5 @@ export type Comment = {
   replies: Comment[];
 };
 
-export type CommentRoot = Omit<Comment, "parent">;
+export type CommentRoot = Comment;
 

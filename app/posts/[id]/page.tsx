@@ -19,7 +19,9 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
       <PostCard post={post}>
         <PostCommentActionBar post={post} />
       </PostCard>
-      {commentsRes.is_success && <CommentTree comments={commentsRes.data} />}
+      {commentsRes.is_success && (
+        <CommentTree postId={id} comments={commentsRes.data} />
+      )}
       {!commentsRes.is_success && (
         <div className="rounded-md p-2  bg-red-100">
           Error fetching comments: {commentsRes.message}

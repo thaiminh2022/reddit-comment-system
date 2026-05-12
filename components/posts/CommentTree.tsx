@@ -2,15 +2,16 @@ import { CommentRoot } from "@/types/posts";
 import { CommentCard } from "./CommentCard";
 
 interface CommentTreeProps {
+  postId: string;
   comments: CommentRoot[];
 }
 
-export const CommentTree: React.FC<CommentTreeProps> = ({ comments }) => {
+export const CommentTree: React.FC<CommentTreeProps> = ({ postId, comments }) => {
   return (
     <div className="p-4 bg-white rounded-lg shadow">
       <h2 className="text-xl font-bold mb-6">Discussion</h2>
       {comments.map((comment) => (
-        <CommentCard key={comment.id} comment={comment} />
+        <CommentCard key={comment.id} postId={postId} comment={comment} />
       ))}
     </div>
   );

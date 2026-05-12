@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { createPost } from "@/lib/actions/data";
 import { ActionResState } from "@/types/error_handler";
-import { Post } from "@/types/posts";
 import { faker } from "@faker-js/faker";
 import { AuthError, PostgrestError } from "@supabase/supabase-js";
 import Link from "next/link";
@@ -15,7 +14,7 @@ import { useActionState, useRef } from "react";
 import z from "zod";
 
 const initialState: ActionResState<
-  Post | null,
+  null,
   AuthError | PostgrestError | z.ZodError
 > = {
   is_success: true,
@@ -35,6 +34,7 @@ export default function Page() {
           </CardTitle>
           <CardAction>
             <Button
+              type="button"
               onClick={() => {
                 if (titleRef.current)
                   titleRef.current.value = `[Generated Post] ${faker.lorem.sentence()}`;

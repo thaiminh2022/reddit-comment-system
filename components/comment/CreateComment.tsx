@@ -1,21 +1,29 @@
 "use client";
 
+import { createComment } from "@/lib/actions/data";
 import CommentReplyBox from "../CommentReplyBox";
 import { Button } from "../ui/button";
 
 interface Props {
+  postId: string;
+  parentId?: string | null;
   replyTo?: string;
-  onSubmit?: () => void;
   getClicked: () => boolean;
   setClicked: (value: boolean) => void;
 }
 
 export default function CreateComment({
+  postId,
+  parentId = null,
   replyTo,
-  onSubmit,
   getClicked,
   setClicked,
 }: Props) {
+  const submitAction = async (formData: FormData) => {
+    await createComment(postId, parentId, formData);
+    setClicked(false);
+  };
+
   return (
     <>
       <div className="mx-3">
@@ -30,7 +38,7 @@ export default function CreateComment({
         </Button>
         {getClicked() && (
           <CommentReplyBox
-            onSubmit={onSubmit}
+            submitAction={submitAction}
             replyTo={replyTo}
             onCancel={() => setClicked(false)}
           />
