@@ -1,6 +1,10 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import {
+  createErrorResponse,
+  createSuccessResponse,
+} from "@/types/error_handler";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
 
@@ -42,7 +46,7 @@ export async function authenticateUser(formData: FormData) {
   // Use the service role to query profiles (bypasses RLS).
   const adminClient = createAdminClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
   );
 
   // Step 1: Check if the username exists in profiles
@@ -76,14 +80,17 @@ export async function authenticateUser(formData: FormData) {
 
     if (adminUserError) {
       // If user already exists in Auth but not in Profiles
-      if (adminUserError.message.includes("already registered") || adminUserError.status === 422) {
+      if (
+        adminUserError.message.includes("already registered") ||
+        adminUserError.status === 422
+      ) {
         // Try to get the user ID from Auth
         const { data: listData } = await adminClient.auth.admin.listUsers();
-        const existingUser = listData.users.find(u => u.email === email);
+        const existingUser = listData.users.find((u) => u.email === email);
         if (existingUser) {
           userId = existingUser.id;
         } else {
-           return { error: "Lỗi xác thực người dùng. Vui lòng thử lại." };
+          return { error: "Lỗi xác thực người dùng. Vui lòng thử lại." };
         }
       } else {
         console.error("Admin user creation error:", adminUserError);
@@ -94,12 +101,10 @@ export async function authenticateUser(formData: FormData) {
     }
 
     // Step 3: Ensure profile record exists
-    const { error: profileError } = await adminClient
-      .from("profiles")
-      .upsert({
-        id: userId,
-        name: trimmedName,
-      });
+    const { error: profileError } = await adminClient.from("profiles").upsert({
+      id: userId,
+      name: trimmedName,
+    });
 
     if (profileError) {
       console.error("Profile upsert error:", profileError);
@@ -120,4 +125,14 @@ export async function authenticateUser(formData: FormData) {
 
   // Step 4: Redirect to posts — must be called OUTSIDE try/catch
   redirect("/posts");
+}
+
+export async function logoutUser() {
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signOut();
+  if (error) {
+    console.error("Logout error:", error);
+    return createErrorResponse("Đăng xuất thất bại. Vui lòng thử lại.", error);
+  }
+  return createSuccessResponse(null);
 }

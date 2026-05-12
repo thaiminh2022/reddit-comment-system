@@ -1,25 +1,32 @@
 import PostCommentActionBar from "@/components/comment/PostCommentActionBar";
 import { CommentTree } from "@/components/posts/CommentTree";
 import PostCard from "@/components/posts/PostCard";
-import { fetchComments, fetchPost } from "@/lib/data";
+import { fetchComments, fetchPostJoinAuthorRow } from "@/lib/actions/data";
 
 export default async function Page(props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
   const id = params.id;
 
-  const post = await fetchPost(id);
-  if (post === null) {
+  const postRes = await fetchPostJoinAuthorRow(id);
+  if (!postRes.is_success) {
     return <>No Post</>;
   }
-
-  const comments = await fetchComments(id);
+  const post = postRes.data;
+  const commentsRes = await fetchComments(id);
 
   return (
     <div className="flex flex-col gap-y-5">
       <PostCard post={post}>
         <PostCommentActionBar post={post} />
       </PostCard>
-      <CommentTree comments={comments} />
+      {commentsRes.is_success && (
+        <CommentTree postId={id} comments={commentsRes.data} />
+      )}
+      {!commentsRes.is_success && (
+        <div className="rounded-md p-2  bg-red-100">
+          Error fetching comments: {commentsRes.message}
+        </div>
+      )}
     </div>
   );
 }

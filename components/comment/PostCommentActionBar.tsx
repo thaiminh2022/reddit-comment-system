@@ -1,13 +1,14 @@
 "use client";
 
-import { Post } from "@/types/posts";
+import { votePost } from "@/lib/actions/data";
+import { PostRow } from "@/types/db_schema";
 import { useState } from "react";
+import CommentPill from "../CommentPill";
 import VotePill from "../VotePill";
 import CreateComment from "./CreateComment";
-import CommentPill from "../CommentPill";
 
 interface Props {
-  post: Post;
+  post: PostRow;
 }
 
 export default function PostCommentActionBar({ post }: Props) {
@@ -17,7 +18,11 @@ export default function PostCommentActionBar({ post }: Props) {
     <>
       <div className="flex flex-col gap-y-3">
         <div className="flex gap-x-3 ml-3">
-          <VotePill score={post.score} />
+          <VotePill
+            score={post.score}
+            upVoteAction={() => votePost(post.id, 1)}
+            downVoteAction={() => votePost(post.id, -1)}
+          />
           <CommentPill
             onClick={() => setClicked(true)}
             commentCount={post.total_comment_count}
@@ -25,6 +30,7 @@ export default function PostCommentActionBar({ post }: Props) {
         </div>
 
         <CreateComment
+          postId={post.id}
           getClicked={() => clicked}
           setClicked={(newValue) => setClicked(newValue)}
         />

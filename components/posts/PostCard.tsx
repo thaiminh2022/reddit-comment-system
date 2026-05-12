@@ -1,4 +1,4 @@
-import { Post } from "@/types/posts";
+import { PostJoinAuthor } from "@/types/db_schema";
 import {
   Card,
   CardAction,
@@ -9,7 +9,7 @@ import {
 } from "../ui/card";
 
 interface Props {
-  post: Post & { author?: { name: string } };
+  post: PostJoinAuthor;
   children?: React.ReactNode | React.ReactNode[];
 }
 
@@ -19,7 +19,9 @@ export default function PostCard({ post, children }: Props) {
       <Card>
         <CardHeader>
           <CardTitle>{post.title}</CardTitle>
-          <CardDescription>Author: {post.author?.name || "Unknown"}</CardDescription>
+          <CardDescription>
+            Author: {post.author?.name || "Unknown"}
+          </CardDescription>
         </CardHeader>
         <CardContent>{post.content}</CardContent>
         <CardAction className="w-full">{children}</CardAction>

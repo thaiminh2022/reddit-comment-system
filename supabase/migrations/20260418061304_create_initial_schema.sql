@@ -60,12 +60,12 @@ CREATE POLICY "Public profiles are viewable by everyone" ON public.profiles FOR 
 CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
 
 CREATE POLICY "Posts are viewable by everyone" ON public.posts FOR SELECT USING (true);
-CREATE POLICY "Authenticated users can create posts" ON public.posts FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Authenticated users can create posts" ON public.posts FOR INSERT WITH CHECK (auth.uid() = author_id);
 CREATE POLICY "Users can update own posts" ON public.posts FOR UPDATE USING (auth.uid() = author_id);
 
 CREATE POLICY "Comments are viewable by everyone" ON public.comments FOR SELECT USING (true);
-CREATE POLICY "Authenticated users can create comments" ON public.comments FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Authenticated users can create comments" ON public.comments FOR INSERT WITH CHECK (auth.uid() = author_id);
 CREATE POLICY "Users can update own comments" ON public.comments FOR UPDATE USING (auth.uid() = author_id);
 
-CREATE POLICY "Users can manage own post votes" ON public.post_votes FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Users can manage own comment votes" ON public.comment_votes FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can manage own post votes" ON public.post_votes FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can manage own comment votes" ON public.comment_votes FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);

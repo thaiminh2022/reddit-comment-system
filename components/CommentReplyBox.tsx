@@ -6,18 +6,18 @@ import { Textarea } from "./ui/textarea";
 interface Props {
   replyTo?: string;
   onCancel?: () => void;
-  onSubmit?: () => void;
+  submitAction: (formData: FormData) => void | Promise<void>;
 }
 
 export default function CommentReplyBox(props: Props) {
   return (
-    <form onSubmit={props.onSubmit} className="flex flex-col gap-y-3">
+    <form action={props.submitAction} className="flex flex-col gap-y-3">
       <Field>
         <FieldTitle hidden={props.replyTo === undefined}>
           Replying to {props.replyTo}
         </FieldTitle>
         <FieldContent>
-          <Textarea className="rounded-xl" />
+          <Textarea className="rounded-xl" name="content" required />
         </FieldContent>
       </Field>
       <div className="flex ml-auto gap-x-3">
