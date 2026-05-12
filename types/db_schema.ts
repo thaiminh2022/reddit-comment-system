@@ -1,15 +1,18 @@
 import * as z from "zod";
 
+const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+const permissiveUuid = z.string().regex(uuidRegex, "Invalid UUID format");
+
 const UserSchema = z.object({
-  id: z.uuid(),
+  id: permissiveUuid,
   name: z.string().trim().min(1),
 });
 
 export const UserInsertSchema = UserSchema.omit({ id: true });
 export const PostSchema = z.object({
-  id: z.uuid(),
+  id: permissiveUuid,
   title: z.string().trim().min(1).max(200),
-  author_id: z.uuid(),
+  author_id: permissiveUuid,
   content: z.string().trim().min(1).max(10000),
   created_at: z.coerce.date(),
   is_deleted: z.boolean(),
@@ -26,8 +29,8 @@ export const PostInsertSchema = PostSchema.omit({
 });
 
 const PostVoteSchema = z.object({
-  post_id: z.uuid(),
-  user_id: z.uuid(),
+  post_id: permissiveUuid,
+  user_id: permissiveUuid,
   value: z.union([z.literal(-1), z.literal(1), z.literal(0)]),
   created_at: z.coerce.date(),
 });
@@ -35,10 +38,10 @@ const PostVoteSchema = z.object({
 export const PostVoteInsertSchema = PostVoteSchema.omit({ created_at: true });
 
 const CommentSchema = z.object({
-  id: z.uuid(),
-  parent_id: z.uuid().nullable(),
-  post_id: z.uuid(),
-  author_id: z.uuid().nullable(),
+  id: permissiveUuid,
+  parent_id: permissiveUuid.nullable(),
+  post_id: permissiveUuid,
+  author_id: permissiveUuid.nullable(),
   content: z.string().trim().min(1).max(10000),
   created_at: z.coerce.date(),
   is_deleted: z.boolean(),
@@ -54,12 +57,12 @@ export const CommentInsertSchema = CommentSchema.omit({
   reply_count: true,
   score: true,
 }).extend({
-  author_id: z.uuid(),
+  author_id: permissiveUuid,
 });
 
 const CommentVoteSchema = z.object({
-  comment_id: z.uuid(),
-  user_id: z.uuid(),
+  comment_id: permissiveUuid,
+  user_id: permissiveUuid,
   value: z.union([z.literal(-1), z.literal(1)]),
   created_at: z.coerce.date(),
 });
