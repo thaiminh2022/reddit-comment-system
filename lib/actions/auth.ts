@@ -7,123 +7,120 @@ import {
 } from "@/types/error_handler";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
+import { z } from "zod";
+import { slugify } from "@/lib/utils";
 
 /** Default password used for all username-based accounts. */
 const DEFAULT_PASSWORD = "reddit-comment-system-default-pwd-2026";
 
-/**
- * Derives a consistent email from a username.
- * Used as the identifier for Supabase Auth since it requires an email.
- */
-function toEmail(username: string): string {
-  return `${username.toLowerCase().trim()}@reddit-comment.local`;
-}
+const AuthSchema = z.object({
+  name: z.string().min(1, "Vui lòng nhập tên đăng nhập.").max(50, "Tên quá dài."),
+});
 
 /**
- * Authenticates a user by username.
+ * Authenticates a user by name.
  *
  * Flow:
- * 1. Check if a profile with the given name exists.
- * 2. If it exists → sign in with the derived email.
- * 3. If not → sign up, then insert a profile record.
- * 4. Redirect to /posts on success.
- *
- * Uses the service role client for profile lookup to bypass RLS,
- * and the regular server client for auth operations.
+ * 1. Search for a profile with the EXACT name.
+ * 2. If found:
+ *    a. Fetch the user's email from auth.users using the admin client.
+ *    b. Sign in with that email and the default password.
+ * 3. If not found:
+ *    a. Create a new user in auth.users with a derived slugified email.
+ *    b. Create a profile record with the original name.
+ *    c. Sign in.
  */
 export async function authenticateUser(formData: FormData) {
-  const username = formData.get("username") as string | null;
+  const rawName = formData.get("username") as string | null;
 
-  if (!username || username.trim().length === 0) {
-    return { error: "Vui lòng nhập tên đăng nhập." };
+  const result = AuthSchema.safeParse({ name: rawName });
+  if (!result.success) {
+    return { error: result.error.errors[0].message };
   }
 
-  const trimmedName = username.trim();
-  const email = toEmail(trimmedName);
-
+  const { name: trimmedName } = result.data;
   const supabase = await createClient();
 
-  // Use the service role to query profiles (bypasses RLS).
   const adminClient = createAdminClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   );
 
-  // Step 1: Check if the username exists in profiles
-  const { data: existingProfile } = await adminClient
+  // Step 1: Search profile by name
+  const { data: profile, error: profileFetchError } = await adminClient
     .from("profiles")
     .select("id")
     .eq("name", trimmedName)
-    .single();
+    .maybeSingle();
 
-  if (existingProfile) {
-    // Step 2a: Username exists → sign in
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password: DEFAULT_PASSWORD,
-    });
+  if (profileFetchError) {
+    console.error("Error fetching profile:", profileFetchError);
+    return { error: "Lỗi hệ thống khi tìm kiếm người dùng." };
+  }
 
-    if (error) {
-      console.error("Sign in error:", error);
-      return { error: "Đăng nhập thất bại. Vui lòng thử lại." };
+  let emailToUse = "";
+
+  if (profile) {
+    // Step 2: Found profile -> get email from Auth
+    const { data: userData, error: userFetchError } =
+      await adminClient.auth.admin.getUserById(profile.id);
+
+    if (userFetchError || !userData.user?.email) {
+      console.error("Error fetching user email:", userFetchError);
+      return { error: "Không tìm thấy thông tin xác thực cho người dùng này." };
     }
-  } else {
-    // Step 2b: Username does not exist in Profiles -> check Auth
-    let userId = "";
 
-    const { data: adminUserData, error: adminUserError } =
+    emailToUse = userData.user.email;
+  } else {
+    // Step 3: Not found -> Create new user
+    // We create a slugified email for the new user to ensure it's valid for Supabase Auth
+    emailToUse = `${slugify(trimmedName)}@reddit-comment.local`;
+
+    const { data: newUser, error: createError } =
       await adminClient.auth.admin.createUser({
-        email,
+        email: emailToUse,
         password: DEFAULT_PASSWORD,
         email_confirm: true,
       });
 
-    if (adminUserError) {
-      // If user already exists in Auth but not in Profiles
-      if (
-        adminUserError.message.includes("already registered") ||
-        adminUserError.status === 422
-      ) {
-        // Try to get the user ID from Auth
-        const { data: listData } = await adminClient.auth.admin.listUsers();
-        const existingUser = listData.users.find((u) => u.email === email);
-        if (existingUser) {
-          userId = existingUser.id;
-        } else {
-          return { error: "Lỗi xác thực người dùng. Vui lòng thử lại." };
-        }
-      } else {
-        console.error("Admin user creation error:", adminUserError);
-        return { error: adminUserError.message || "Không thể tạo tài khoản." };
+    if (createError) {
+      // Handle the case where the email might already exist
+      if (createError.message.includes("already registered")) {
+        // If name wasn't found but email exists, it's a conflict or a name mismatch
+        return {
+          error:
+            "Tên này có thể đã được sử dụng hoặc có xung đột hệ thống. Thử tên khác?",
+        };
       }
-    } else {
-      userId = adminUserData.user.id;
+      console.error("Error creating user:", createError);
+      return { error: "Không thể tạo tài khoản mới." };
     }
 
-    // Step 3: Ensure profile record exists
-    const { error: profileError } = await adminClient.from("profiles").upsert({
-      id: userId,
-      name: trimmedName,
-    });
+    // Step 4: Create profile record
+    const { error: insertProfileError } = await adminClient
+      .from("profiles")
+      .insert({
+        id: newUser.user.id,
+        name: trimmedName,
+      });
 
-    if (profileError) {
-      console.error("Profile upsert error:", profileError);
-      return { error: "Lỗi tạo hồ sơ người dùng." };
-    }
-
-    // Step 4: Now sign in to establish a session
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password: DEFAULT_PASSWORD,
-    });
-
-    if (signInError) {
-      console.error("Sign in error:", signInError);
-      return { error: "Đăng nhập thất bại sau khi tạo tài khoản." };
+    if (insertProfileError) {
+      console.error("Error creating profile:", insertProfileError);
+      return { error: "Không thể tạo hồ sơ người dùng." };
     }
   }
 
-  // Step 4: Redirect to posts — must be called OUTSIDE try/catch
+  // Final Step: Sign in
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email: emailToUse,
+    password: DEFAULT_PASSWORD,
+  });
+
+  if (signInError) {
+    console.error("Sign in error:", signInError);
+    return { error: "Đăng nhập thất bại. Vui lòng kiểm tra lại." };
+  }
+
   redirect("/posts");
 }
 
