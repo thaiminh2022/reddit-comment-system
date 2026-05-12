@@ -48,6 +48,7 @@ export const CommentCard: React.FC<CommentProps> = ({
             </button>
           )}
           <CommentVotePill
+            postId={postId}
             commentId={comment.id}
             score={comment.score}
             voteState={commentVoteStates[comment.id] ?? "not-voted"}

@@ -10,6 +10,7 @@ import {
   createErrorResponse,
   createSuccessResponse,
 } from "@/types/error_handler";
+import { revalidatePath } from "next/cache";
 import { createClient } from "../supabase/server";
 
 // +1: upvote
@@ -111,7 +112,11 @@ export async function getCommentVoteStates(commentIds: string[]) {
   return createSuccessResponse(voteStates);
 }
 
-export async function setVotePost(postId: string, voteState: VoteState) {
+export async function setVotePost(
+  postId: string,
+  voteState: VoteState,
+  pathname?: string,
+) {
   const userRes = await getUser();
 
   if (!userRes.is_success) {
@@ -130,6 +135,10 @@ export async function setVotePost(postId: string, voteState: VoteState) {
     if (error) {
       return createErrorResponse(error.message, error);
     }
+    if (pathname) {
+      revalidatePath(pathname);
+    }
+    revalidatePath("/posts");
 
     return createSuccessResponse(null);
   }
@@ -154,10 +163,19 @@ export async function setVotePost(postId: string, voteState: VoteState) {
     return createErrorResponse(error.message, error);
   }
 
+  if (pathname) {
+    revalidatePath(pathname);
+  }
+  revalidatePath("/posts");
+
   return createSuccessResponse(data as PostVoteRow);
 }
 
-export async function setVoteComment(commentId: string, voteState: VoteState) {
+export async function setVoteComment(
+  commentId: string,
+  voteState: VoteState,
+  pathname?: string,
+) {
   const userRes = await getUser();
 
   if (!userRes.is_success) {
@@ -176,7 +194,9 @@ export async function setVoteComment(commentId: string, voteState: VoteState) {
     if (error) {
       return createErrorResponse(error.message, error);
     }
-
+    if (pathname) {
+      revalidatePath(pathname);
+    }
     return createSuccessResponse(null);
   }
 
@@ -198,6 +218,10 @@ export async function setVoteComment(commentId: string, voteState: VoteState) {
 
   if (error) {
     return createErrorResponse(error.message, error);
+  }
+
+  if (pathname) {
+    revalidatePath(pathname);
   }
 
   return createSuccessResponse(data as CommentVoteRow);

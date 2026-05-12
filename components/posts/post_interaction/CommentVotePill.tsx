@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { Button } from "../../ui/button";
 
 interface CommentVotePillProps {
+  postId: string;
   commentId: string;
   score: number;
   voteState: VoteState;
@@ -23,6 +24,7 @@ type OptimisticScore = {
 };
 
 export function CommentVotePill({
+  postId,
   commentId,
   score,
   voteState,
@@ -52,7 +54,7 @@ export function CommentVotePill({
 
     startTransition(async () => {
       setOptimisticVote(nextVote);
-      const res = await setVoteComment(commentId, nextVote);
+      const res = await setVoteComment(commentId, nextVote, `/posts/${postId}`);
       if (!res.is_success) {
         toast.error(`Error happened, ${res.message} \n${res.error}`);
       }
@@ -65,7 +67,7 @@ export function CommentVotePill({
 
     startTransition(async () => {
       setOptimisticVote(nextVote);
-      const res = await setVoteComment(commentId, nextVote);
+      const res = await setVoteComment(commentId, nextVote, `/posts/${postId}`);
       if (!res.is_success) {
         toast.error(`Error happened, ${res.message} \n${res.error}`);
       }

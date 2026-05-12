@@ -48,7 +48,7 @@ export function PostVotePill({ post, voteState }: VotePillProps) {
 
     startTransition(async () => {
       setOptimisticVote(nextVote);
-      const res = await setVotePost(post.id, nextVote);
+      const res = await setVotePost(post.id, nextVote, `/posts/${post.id}`);
       if (!res.is_success) {
         toast.error(`Error happened, ${res.message} \n${res.error}`);
       }
@@ -61,7 +61,7 @@ export function PostVotePill({ post, voteState }: VotePillProps) {
 
     startTransition(async () => {
       setOptimisticVote(nextVote);
-      const res = await setVotePost(post.id, nextVote);
+      const res = await setVotePost(post.id, nextVote, `/posts/${post.id}`);
       if (!res.is_success) {
         toast.error(`Error happened, ${res.message} \n${res.error}`);
       }
