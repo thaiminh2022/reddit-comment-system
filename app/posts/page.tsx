@@ -46,6 +46,9 @@ export default async function Page() {
         </CardContent>
       </Card>
 
+      {/* Filter by */}
+      <div></div>
+
       {posts.map((p, i) => (
         <PostCard post={p} key={i}>
           <PostActionBar post={p} />
