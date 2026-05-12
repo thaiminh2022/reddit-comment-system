@@ -17,7 +17,7 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
   return (
     <div className="flex flex-col gap-y-5">
       <PostCard post={post}>
-        <PostCommentActionBar post={post} />
+        <PostCommentActionBar post={post} isVoted={1} />
       </PostCard>
       {commentsRes.is_success && (
         <CommentTree postId={id} comments={commentsRes.data} />

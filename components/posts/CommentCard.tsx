@@ -1,9 +1,7 @@
 "use client";
-import { voteComment } from "@/lib/actions/data";
 import { CommentRoot } from "@/types/posts";
 import { useState } from "react";
 import CommentPill from "../CommentPill";
-import VotePill from "../VotePill";
 import CreateComment from "../comment/CreateComment";
 
 interface CommentProps {
@@ -43,11 +41,6 @@ export const CommentCard: React.FC<CommentProps> = ({ postId, comment }) => {
             </button>
           )}
 
-          <VotePill
-            score={comment.score}
-            upVoteAction={() => voteComment(postId, comment.id, 1)}
-            downVoteAction={() => voteComment(postId, comment.id, -1)}
-          />
           <CommentPill onClick={() => setClickedReply(true)} />
         </div>
         <CreateComment

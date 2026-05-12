@@ -4,6 +4,7 @@ import {
   CardAction,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "../ui/card";
@@ -24,7 +25,9 @@ export default function PostCard({ post, children }: Props) {
           </CardDescription>
         </CardHeader>
         <CardContent>{post.content}</CardContent>
-        <CardAction className="w-full">{children}</CardAction>
+        <CardFooter>
+          <CardAction className="w-full">{children}</CardAction>
+        </CardFooter>
       </Card>
     </>
   );

@@ -1,8 +1,8 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
+import { IconLogout } from "@tabler/icons-react";
 import { useRouter } from "next/navigation";
-import { IoLogOut } from "react-icons/io5";
 import { Button } from "./ui/button";
 
 export default function LogoutButton() {
@@ -29,7 +29,7 @@ export default function LogoutButton() {
       variant={"destructive"}
       className="cursor-pointer"
     >
-      <IoLogOut />
+      <IconLogout />
       Log out
     </Button>
   );
