@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { slugify } from "@/lib/utils";
 import {
   createErrorResponse,
   createSuccessResponse,
@@ -8,13 +9,15 @@ import {
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { slugify } from "@/lib/utils";
 
 /** Default password used for all username-based accounts. */
 const DEFAULT_PASSWORD = "reddit-comment-system-default-pwd-2026";
 
 const AuthSchema = z.object({
-  name: z.string().min(1, "Vui lòng nhập tên đăng nhập.").max(50, "Tên quá dài."),
+  name: z
+    .string()
+    .min(1, "Vui lòng nhập tên đăng nhập.")
+    .max(50, "Tên quá dài."),
 });
 
 /**
@@ -35,7 +38,7 @@ export async function authenticateUser(formData: FormData) {
 
   const result = AuthSchema.safeParse({ name: rawName });
   if (!result.success) {
-    return { error: result.error.errors[0].message };
+    return { error: result.error.message };
   }
 
   const { name: trimmedName } = result.data;

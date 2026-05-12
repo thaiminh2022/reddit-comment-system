@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import type { PostSort } from "@/lib/posts/sort";
 import {
   CommentInsertSchema,
   CommentJoinAuthor,
@@ -19,17 +20,38 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
-export async function fetchPostJoinAuthorRows() {
+export async function fetchPostJoinAuthorRows(sort: PostSort = "newest") {
   const supabase = await createClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("posts")
     .select(
       `
       *,
       author:profiles!posts_author_id_fkey(id, name)
     `,
-    )
-    .order("created_at", { ascending: false });
+    );
+
+  if (sort === "top-past-year") {
+    query = query.gte("created_at", getIsoDateMonthsAgo(12));
+  }
+
+  if (sort === "top-past-month") {
+    query = query.gte("created_at", getIsoDateMonthsAgo(1));
+  }
+
+  const sortedQuery =
+    sort === "hot"
+      ? query
+          .order("total_comment_count", { ascending: false })
+          .order("score", { ascending: false })
+          .order("created_at", { ascending: false })
+      : sort.startsWith("top-")
+        ? query
+            .order("score", { ascending: false })
+            .order("created_at", { ascending: false })
+        : query.order("created_at", { ascending: false });
+
+  const { data, error } = await sortedQuery;
 
   if (error) {
     console.error("Error fetching posts:", error);
@@ -38,6 +60,12 @@ export async function fetchPostJoinAuthorRows() {
 
   const posts = data as PostJoinAuthor[];
   return createSuccessResponse(posts);
+}
+
+function getIsoDateMonthsAgo(months: number) {
+  const date = new Date();
+  date.setMonth(date.getMonth() - months);
+  return date.toISOString();
 }
 
 export async function fetchPostJoinAuthorRow(uuid: string) {
