@@ -36,6 +36,7 @@ export async function fetchPostJoinAuthorRows(
   cursor?: string,
   pageSize: number = 10,
   sort: PostSort = "newest",
+  search?: string,
 ) {
   const supabase = await createClient();
   const decoded = cursor ? decodeCursor(cursor) : null;
@@ -49,6 +50,11 @@ export async function fetchPostJoinAuthorRows(
     `,
     )
     .limit(pageSize + 1);
+
+  if (search) {
+    // Fallback to ilike if generated columns are not set up
+    query = query.or(`title.ilike.%${search}%,content.ilike.%${search}%`);
+  }
 
   // Time filters for Top sorts
   if (sort === "top-past-year") {
@@ -281,6 +287,41 @@ export async function fetchSubComments(parentId: string) {
   return createSuccessResponse(comments);
 }
 
+export async function searchComments(postID: string, search: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("comments")
+    .select(`*, author:profiles!comments_author_id_fkey(id, name)`)
+    .eq("post_id", postID)
+    .ilike("content", `%${search}%`)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error(`Error searching comments in post ${postID}:`, error);
+    return createErrorResponse(error.message, error);
+  }
+
+  const rows = data as CommentJoinAuthor[];
+  const comments = rows.map(row => ({
+    id: row.id,
+    parent_id: row.parent_id,
+    author: row.author ?? {
+      id: row.author_id ?? "deleted",
+      name: "Deleted user",
+    },
+    content: row.content,
+    created_at: row.created_at instanceof Date ? row.created_at : new Date(row.created_at),
+    reply_count: row.reply_count,
+    score: row.score,
+    is_deleted: row.is_deleted,
+    replies: [],
+    has_more: false
+  }));
+
+  return createSuccessResponse(comments);
+}
+
 export async function fetchProfileRow(uuid: string) {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -351,26 +392,39 @@ export async function createComment(
     return createErrorResponse(userRes.error.message, userRes.error);
   }
 
+  // Normalize parentId: treat empty string or "null" as null
+  const normalizedParentId = (parentId === "" || parentId === "null" || !parentId) ? null : parentId;
+  const content = form.get("content")?.toString() || "";
+
   const commentInsert = CommentInsertSchema.safeParse({
     post_id: postId,
-    parent_id: parentId,
+    parent_id: normalizedParentId,
     author_id: userRes.data.user.id,
-    content: form.get("content"),
+    content: content,
   });
 
   if (!commentInsert.success) {
-    console.error("Error creating comment:", commentInsert.error);
+    console.error("Validation error creating comment:", {
+      errors: commentInsert.error.errors,
+      input: { 
+        postId, 
+        parentId, 
+        normalizedParentId, 
+        authorId: userRes.data.user.id,
+        content 
+      }
+    });
     return createErrorResponse(
       commentInsert.error.message,
       commentInsert.error,
     );
   }
 
-  if (parentId !== null) {
+  if (normalizedParentId !== null) {
     const { data: parentComment, error: parentError } = await supabase
       .from("comments")
       .select("post_id")
-      .eq("id", parentId)
+      .eq("id", normalizedParentId)
       .single();
 
     if (parentError) {
