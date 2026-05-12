@@ -1,4 +1,4 @@
-import { IoChatboxEllipses } from "react-icons/io5";
+import { IconBubblePlus } from "@tabler/icons-react";
 import { Button } from "./ui/button";
 
 interface Props {
@@ -15,7 +15,7 @@ export default function CommentPill({ onClick, commentCount }: Props) {
         onClick={onClick}
         type="button"
       >
-        <IoChatboxEllipses className="w-5 h-5" strokeWidth={1.5} />
+        <IconBubblePlus className="w-5 h-5" strokeWidth={1.5} />
         {commentCount}
       </Button>
     </div>

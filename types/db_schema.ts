@@ -28,7 +28,7 @@ export const PostInsertSchema = PostSchema.omit({
 const PostVoteSchema = z.object({
   post_id: z.uuid(),
   user_id: z.uuid(),
-  value: z.union([z.literal(-1), z.literal(1)]),
+  value: z.union([z.literal(-1), z.literal(1), z.literal(0)]),
   created_at: z.coerce.date(),
 });
 

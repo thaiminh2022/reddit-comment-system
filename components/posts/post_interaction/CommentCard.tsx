@@ -1,17 +1,22 @@
 "use client";
-import { voteComment } from "@/lib/actions/data";
+import type { CommentVoteStates } from "@/lib/actions/updownvote";
 import { CommentRoot } from "@/types/posts";
 import { useState } from "react";
-import CommentPill from "../CommentPill";
-import VotePill from "../VotePill";
-import CreateComment from "../comment/CreateComment";
+import CommentPill from "../../CommentPill";
+import CreateComment from "../../CreateComment";
+import { CommentVotePill } from "./CommentVotePill";
 
 interface CommentProps {
   postId: string;
   comment: CommentRoot;
+  commentVoteStates: CommentVoteStates;
 }
 
-export const CommentCard: React.FC<CommentProps> = ({ postId, comment }) => {
+export const CommentCard: React.FC<CommentProps> = ({
+  postId,
+  comment,
+  commentVoteStates,
+}) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [clickedReply, setClickedReply] = useState(false);
 
@@ -42,11 +47,11 @@ export const CommentCard: React.FC<CommentProps> = ({ postId, comment }) => {
                 : `Show ${comment.replies?.length} Replies`}
             </button>
           )}
-
-          <VotePill
+          <CommentVotePill
+            postId={postId}
+            commentId={comment.id}
             score={comment.score}
-            upVoteAction={() => voteComment(postId, comment.id, 1)}
-            downVoteAction={() => voteComment(postId, comment.id, -1)}
+            voteState={commentVoteStates[comment.id] ?? "not-voted"}
           />
           <CommentPill onClick={() => setClickedReply(true)} />
         </div>
@@ -62,8 +67,13 @@ export const CommentCard: React.FC<CommentProps> = ({ postId, comment }) => {
       {/* Recursive Render: If expanded and has replies, render them */}
       {isExpanded && hasReplies && (
         <div className="ml-2">
-          {comment.replies!.map((reply) => (
-            <CommentCard key={reply.id} postId={postId} comment={reply} />
+          {comment.replies.map((reply) => (
+            <CommentCard
+              key={reply.id}
+              postId={postId}
+              comment={reply}
+              commentVoteStates={commentVoteStates}
+            />
           ))}
         </div>
       )}

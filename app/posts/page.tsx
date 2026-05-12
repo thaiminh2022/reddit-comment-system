@@ -10,8 +10,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { fetchPostJoinAuthorRows } from "@/lib/actions/data";
+import { IconPencil } from "@tabler/icons-react";
 import Link from "next/link";
-import { ImPen } from "react-icons/im";
 
 export default async function Page() {
   const postsRes = await fetchPostJoinAuthorRows();
@@ -38,7 +38,7 @@ export default async function Page() {
           <CardAction className="w-full">
             <Link href={"/posts/create"}>
               <Button className="cursor-pointer">
-                <ImPen />
+                <IconPencil />
                 Create Post
               </Button>
             </Link>

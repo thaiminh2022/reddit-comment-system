@@ -4,10 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import {
   CommentInsertSchema,
   CommentJoinAuthor,
-  CommentVoteInsertSchema,
   PostInsertSchema,
   PostJoinAuthor,
-  PostVoteInsertSchema,
   UserRow,
 } from "@/types/db_schema";
 import {
@@ -213,7 +211,10 @@ export async function createComment(
 
   if (!commentInsert.success) {
     console.error("Error creating comment:", commentInsert.error);
-    return createErrorResponse(commentInsert.error.message, commentInsert.error);
+    return createErrorResponse(
+      commentInsert.error.message,
+      commentInsert.error,
+    );
   }
 
   if (parentId !== null) {
@@ -260,98 +261,4 @@ async function getAuthenticatedUserId() {
     userId: userRes.data.user.id,
     error: null,
   };
-}
-
-export async function votePost(postId: string, value: 1 | -1) {
-  const { supabase, userId, error: authError } = await getAuthenticatedUserId();
-
-  if (authError || !userId) {
-    return createErrorResponse(authError?.message ?? "Unauthorized", authError);
-  }
-
-  const voteInsert = PostVoteInsertSchema.safeParse({
-    post_id: postId,
-    user_id: userId,
-    value,
-  });
-
-  if (!voteInsert.success) {
-    return createErrorResponse(voteInsert.error.message, voteInsert.error);
-  }
-
-  const { data: existingVote, error: fetchError } = await supabase
-    .from("post_votes")
-    .select("value")
-    .eq("post_id", postId)
-    .eq("user_id", userId)
-    .maybeSingle();
-
-  if (fetchError) {
-    return createErrorResponse(fetchError.message, fetchError);
-  }
-
-  const mutation =
-    existingVote?.value === value
-      ? supabase.from("post_votes").delete().match({ post_id: postId, user_id: userId })
-      : supabase.from("post_votes").upsert(voteInsert.data);
-
-  const { error } = await mutation;
-
-  if (error) {
-    return createErrorResponse(error.message, error);
-  }
-
-  revalidatePath("/posts");
-  revalidatePath(`/posts/${postId}`);
-  return createSuccessResponse(null);
-}
-
-export async function voteComment(
-  postId: string,
-  commentId: string,
-  value: 1 | -1,
-) {
-  const { supabase, userId, error: authError } = await getAuthenticatedUserId();
-
-  if (authError || !userId) {
-    return createErrorResponse(authError?.message ?? "Unauthorized", authError);
-  }
-
-  const voteInsert = CommentVoteInsertSchema.safeParse({
-    comment_id: commentId,
-    user_id: userId,
-    value,
-  });
-
-  if (!voteInsert.success) {
-    return createErrorResponse(voteInsert.error.message, voteInsert.error);
-  }
-
-  const { data: existingVote, error: fetchError } = await supabase
-    .from("comment_votes")
-    .select("value")
-    .eq("comment_id", commentId)
-    .eq("user_id", userId)
-    .maybeSingle();
-
-  if (fetchError) {
-    return createErrorResponse(fetchError.message, fetchError);
-  }
-
-  const mutation =
-    existingVote?.value === value
-      ? supabase
-          .from("comment_votes")
-          .delete()
-          .match({ comment_id: commentId, user_id: userId })
-      : supabase.from("comment_votes").upsert(voteInsert.data);
-
-  const { error } = await mutation;
-
-  if (error) {
-    return createErrorResponse(error.message, error);
-  }
-
-  revalidatePath(`/posts/${postId}`);
-  return createSuccessResponse(null);
 }
