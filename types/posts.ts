@@ -25,7 +25,14 @@ export type Comment = {
   score: number;
   is_deleted: boolean;
   replies: Comment[];
+  has_more?: boolean; // Indicates if there are deeper replies not fetched
 };
 
 export type CommentRoot = Comment;
+
+export type PaginatedPosts = {
+  posts: Post[];
+  nextCursor: string | null;
+  pageSize: number;
+};
 
