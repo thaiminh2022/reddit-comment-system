@@ -1,3 +1,4 @@
+import LogoutButton from "@/components/LogoutButton";
 import PostActionBar from "@/components/posts/PostActionBar";
 import PostCard from "@/components/posts/PostCard";
 import { Button } from "@/components/ui/button";
@@ -30,9 +31,7 @@ export default async function Page() {
         <CardHeader>
           <CardTitle className="font-bold text-3xl">Posts</CardTitle>
           <CardAction>
-            <Link href={"/auth/logout"}>
-              <Button variant="outline">Logoff</Button>
-            </Link>
+            <LogoutButton />
           </CardAction>
         </CardHeader>
         <CardContent>
