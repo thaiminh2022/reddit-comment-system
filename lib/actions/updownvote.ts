@@ -51,6 +51,36 @@ export async function getPostVoteState(post_id: string) {
   }
 }
 
+export async function getPostVoteStates(postIds: string[]) {
+  const userRes = await getUser();
+
+  if (!userRes.is_success) {
+    return userRes;
+  }
+
+  if (postIds.length === 0) {
+    return createSuccessResponse<Record<string, VoteState>>({});
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("post_votes")
+    .select("post_id, value")
+    .eq("user_id", userRes.data.id)
+    .in("post_id", postIds);
+
+  if (error) {
+    return createErrorResponse(error.message, error);
+  }
+
+  const voteStates: Record<string, VoteState> = {};
+  for (const vote of data as Pick<PostVoteRow, "post_id" | "value">[]) {
+    voteStates[vote.post_id] = vote.value === -1 ? "down" : "up";
+  }
+
+  return createSuccessResponse(voteStates);
+}
+
 export async function getCommentVoteState(commentId: string) {
   const userRes = await getUser();
 
