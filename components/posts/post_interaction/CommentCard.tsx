@@ -12,12 +12,14 @@ interface CommentProps {
   postId: string;
   comment: CommentRoot;
   commentVoteStates: CommentVoteStates;
+  hideReplies?: boolean;
 }
 
 export const CommentCard: React.FC<CommentProps> = ({
   postId,
   comment,
   commentVoteStates: initialVoteStates,
+  hideReplies = false,
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [clickedReply, setClickedReply] = useState(false);
@@ -26,7 +28,7 @@ export const CommentCard: React.FC<CommentProps> = ({
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   const allReplies = [...(comment.replies || []), ...extraReplies];
-  const hasReplies = allReplies.length > 0;
+  const hasReplies = allReplies.length > 0 && !hideReplies;
 
   const handleLoadMore = async () => {
     setIsLoadingMore(true);
@@ -39,7 +41,7 @@ export const CommentCard: React.FC<CommentProps> = ({
   };
 
   return (
-    <div className="mt-4 border-l-2 border-gray-200 pl-4 transition-all">
+    <div className={`mt-4 ${!hideReplies ? "border-l-2 border-gray-200 pl-4" : ""} transition-all`}>
       {/* Comment Header & Content */}
       <div className="mb-2">
         <div className="flex items-center gap-2">
@@ -69,19 +71,21 @@ export const CommentCard: React.FC<CommentProps> = ({
             score={comment.score}
             voteState={initialVoteStates[comment.id] ?? "not-voted"}
           />
-          <CommentPill onClick={() => setClickedReply(true)} />
+          {!hideReplies && <CommentPill onClick={() => setClickedReply(true)} />}
         </div>
-        <CreateComment
-          postId={postId}
-          parentId={comment.id}
-          replyTo={comment.author.name}
-          getClicked={() => clickedReply}
-          setClicked={setClickedReply}
-        />
+        {!hideReplies && (
+          <CreateComment
+            postId={postId}
+            parentId={comment.id}
+            replyTo={comment.author.name}
+            getClicked={() => clickedReply}
+            setClicked={setClickedReply}
+          />
+        )}
       </div>
 
       {/* Recursive Render: If expanded and has replies, render them */}
-      {isExpanded && (
+      {isExpanded && !hideReplies && (
         <div className="ml-2">
           {allReplies.map((reply) => (
             <CommentCard
