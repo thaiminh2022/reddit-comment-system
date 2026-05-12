@@ -8,12 +8,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { fetchPosts } from "@/lib/actions/data";
+import { fetchPostJoinAuthorRows } from "@/lib/actions/data";
 import Link from "next/link";
 import { ImPen } from "react-icons/im";
 
 export default async function Page() {
-  const postsRes = await fetchPosts();
+  const postsRes = await fetchPostJoinAuthorRows();
   if (!postsRes.is_success) {
     return (
       <div className="rounded-md p-2  bg-red-100">

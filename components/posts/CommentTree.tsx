@@ -1,8 +1,8 @@
-import { FullComment, FullPost } from "@/types/posts";
+import { CommentRoot } from "@/types/posts";
 import { CommentCard } from "./CommentCard";
 
 interface CommentTreeProps {
-  comments: FullComment[];
+  comments: CommentRoot[];
 }
 
 export const CommentTree: React.FC<CommentTreeProps> = ({ comments }) => {

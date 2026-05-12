@@ -1,12 +1,12 @@
 "use client";
-import { FullComment } from "@/types/posts";
+import { CommentRoot } from "@/types/posts";
 import { useState } from "react";
-import VotePill from "../VotePill";
 import CommentPill from "../CommentPill";
+import VotePill from "../VotePill";
 import CreateComment from "../comment/CreateComment";
 
 interface CommentProps {
-  comment: FullComment;
+  comment: CommentRoot;
 }
 
 export const CommentCard: React.FC<CommentProps> = ({ comment }) => {

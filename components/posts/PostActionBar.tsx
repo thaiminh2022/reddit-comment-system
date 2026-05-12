@@ -1,11 +1,11 @@
-import { Post } from "@/types/posts";
+import { PostRow } from "@/types/db_schema";
 import Link from "next/link";
 import { IoChatboxEllipses } from "react-icons/io5";
 import { Button } from "../ui/button";
 import VotePill from "../VotePill";
 
 interface Props {
-  post: Post;
+  post: PostRow;
 }
 
 export default function PostActionBar({ post }: Props) {

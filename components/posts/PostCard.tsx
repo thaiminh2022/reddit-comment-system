@@ -1,4 +1,4 @@
-import { Post } from "@/types/posts";
+import { PostJoinAuthor } from "@/types/db_schema";
 import {
   Card,
   CardAction,
@@ -9,7 +9,7 @@ import {
 } from "../ui/card";
 
 interface Props {
-  post: Post & { author?: { name: string } };
+  post: PostJoinAuthor;
   children?: React.ReactNode | React.ReactNode[];
 }
 

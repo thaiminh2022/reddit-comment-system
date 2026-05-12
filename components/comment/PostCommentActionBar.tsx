@@ -1,13 +1,13 @@
 "use client";
 
-import { Post } from "@/types/posts";
+import { PostRow } from "@/types/db_schema";
 import { useState } from "react";
+import CommentPill from "../CommentPill";
 import VotePill from "../VotePill";
 import CreateComment from "./CreateComment";
-import CommentPill from "../CommentPill";
 
 interface Props {
-  post: Post;
+  post: PostRow;
 }
 
 export default function PostCommentActionBar({ post }: Props) {

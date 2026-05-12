@@ -2,19 +2,23 @@
 
 import { createClient } from "@/lib/supabase/server";
 import {
+  CommentJoinAuthor,
+  PostInsertSchema,
+  PostJoinAuthor,
+  UserRow,
+} from "@/types/db_schema";
+import {
   ActionResState,
   createErrorResponse,
   createSuccessResponse,
 } from "@/types/error_handler";
-import { FullComment, Post, PostInsertSchema, User } from "@/types/posts";
+import { Comment, CommentRoot, Post } from "@/types/posts";
 import { AuthError, PostgrestError } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
-type PostAndUser = Post & User;
-
-export async function fetchPosts() {
+export async function fetchPostJoinAuthorRows() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("posts")
@@ -31,11 +35,11 @@ export async function fetchPosts() {
     return createErrorResponse(error.message, error);
   }
 
-  const posts = data as PostAndUser[];
+  const posts = data as PostJoinAuthor[];
   return createSuccessResponse(posts);
 }
 
-export async function fetchPost(uuid: string): Promise<any | null> {
+export async function fetchPostJoinAuthorRow(uuid: string) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("posts")
@@ -50,20 +54,19 @@ export async function fetchPost(uuid: string): Promise<any | null> {
 
   if (error) {
     console.error(`Error fetching post ${uuid}:`, error);
-    return null;
+    return createErrorResponse(error.message, error);
   }
 
-  return {
-    ...data,
-    created_at: new Date(data.created_at),
-  };
+  const dataPost = data as PostJoinAuthor;
+
+  return createSuccessResponse(dataPost);
 }
 
-export async function fetchComments(postID: string): Promise<FullComment[]> {
+export async function fetchComments(postID: string) {
   const supabase = await createClient();
 
   // Fetch all comments for this post
-  const { data: comments, error } = await supabase
+  const { data: commentsRes, error } = await supabase
     .from("comments")
     .select(
       `
@@ -76,38 +79,62 @@ export async function fetchComments(postID: string): Promise<FullComment[]> {
 
   if (error) {
     console.error(`Error fetching comments for post ${postID}:`, error);
-    return [];
+    return createErrorResponse(error.message, error);
   }
 
-  // Build comment tree
-  const commentMap = new Map<string, FullComment>();
-  const rootComments: FullComment[] = [];
+  const rows = commentsRes as CommentJoinAuthor[];
+  const commentMap = new Map<string, Comment>();
+  const rootComments: CommentRoot[] = [];
 
-  // Initialize map with comments and empty replies array
-  comments.forEach((c: any) => {
-    commentMap.set(c.id, {
-      ...c,
-      created_at: new Date(c.created_at),
+  // First pass: create all comment objects
+  for (const row of rows) {
+    commentMap.set(row.id, {
+      id: row.id,
+      parent: null,
+      author: row.author ?? {
+        id: row.author_id,
+        name: "Unknown",
+      },
+      content: row.content,
+      created_at:
+        row.created_at instanceof Date
+          ? row.created_at
+          : new Date(row.created_at),
+      reply_count: row.reply_count,
+      score: row.score,
+      is_deleted: row.is_deleted,
       replies: [],
     });
-  });
+  }
+  // Second pass: attach comments to their parents
+  for (const row of rows) {
+    const comment = commentMap.get(row.id);
 
-  // Link children to parents
-  commentMap.forEach((comment) => {
-    if (comment.parent_id) {
-      const parent = commentMap.get(comment.parent_id);
-      if (parent) {
-        parent.replies.push(comment);
-      }
-    } else {
-      rootComments.push(comment);
+    if (!comment) continue;
+
+    if (row.parent_id === null) {
+      const { parent, ...rootComment } = comment;
+      rootComments.push(rootComment);
+      continue;
     }
-  });
 
-  return rootComments;
+    const parent = commentMap.get(row.parent_id);
+
+    if (!parent) {
+      // Parent missing, so treat it as a root comment fallback
+      const { parent: _, ...rootComment } = comment;
+      rootComments.push(rootComment);
+      continue;
+    }
+
+    comment.parent = parent;
+    parent.replies.push(comment);
+  }
+
+  return createSuccessResponse(rootComments);
 }
 
-export async function fetchUserData(uuid: string): Promise<User | null> {
+export async function fetchProfileRow(uuid: string) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("profiles")
@@ -117,10 +144,11 @@ export async function fetchUserData(uuid: string): Promise<User | null> {
 
   if (error) {
     console.error(`Error fetching user data ${uuid}:`, error);
-    return null;
+    return createErrorResponse(error.message, error);
   }
 
-  return data as User;
+  const user = data as UserRow;
+  return createSuccessResponse(user);
 }
 
 export async function createPost(
