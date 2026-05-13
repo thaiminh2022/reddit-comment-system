@@ -7,7 +7,7 @@ import {
   IconArrowBigUp,
   IconArrowBigUpFilled,
 } from "@tabler/icons-react";
-import { startTransition, useOptimistic } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "../../ui/button";
 
@@ -18,85 +18,87 @@ interface CommentVotePillProps {
   voteState: VoteState;
 }
 
-type OptimisticScore = {
-  score: number;
-  userVote: VoteState;
-};
-
 export function CommentVotePill({
   postId,
   commentId,
-  score,
-  voteState,
+  score: initialScore,
+  voteState: initialVoteState,
 }: CommentVotePillProps) {
-  const [optimisticVote, setOptimisticVote] = useOptimistic<
-    OptimisticScore,
-    VoteState
-  >(
-    {
-      score: score,
-      userVote: voteState,
-    },
-    (s, a) => {
-      const oldVoteValue = voteValue(s.userVote);
-      const nextVoteValue = voteValue(a);
+  const [currentScore, setCurrentScore] = useState(initialScore);
+  const [currentVote, setCurrentVote] = useState(initialVoteState);
 
-      return {
-        userVote: a,
-        score: s.score - oldVoteValue + nextVoteValue,
-      };
-    },
-  );
+  // Sync with props if they change (e.g. fresh data from server eventually arrives)
+  useEffect(() => {
+    setCurrentScore(initialScore);
+    setCurrentVote(initialVoteState);
+  }, [initialScore, initialVoteState]);
 
-  async function handleUpvote() {
-    const nextVote: VoteState =
-      optimisticVote.userVote === "up" ? "not-voted" : "up";
+  async function handleVote(nextVote: VoteState) {
+    const oldVote = currentVote;
+    const oldScore = currentScore;
+    
+    // Calculate new score based on state change
+    const oldVal = voteValue(oldVote);
+    const newVal = voteValue(nextVote);
+    const nextScore = oldScore - oldVal + newVal;
 
-    startTransition(async () => {
-      setOptimisticVote(nextVote);
-      const res = await setVoteComment(commentId, nextVote, `/posts/${postId}`);
-      if (!res.is_success) {
-        toast.error(`Error happened, ${res.message} \n${res.error}`);
-      }
-    });
+    // Optimistic Update
+    setCurrentVote(nextVote);
+    setCurrentScore(nextScore);
+
+    const res = await setVoteComment(commentId, nextVote, `/posts/${postId}`);
+    if (!res.is_success) {
+      toast.error(`Error happened, ${res.message}`);
+      // Revert on error
+      setCurrentVote(oldVote);
+      setCurrentScore(oldScore);
+    }
   }
 
-  async function handleDownVote() {
-    const nextVote: VoteState =
-      optimisticVote.userVote === "down" ? "not-voted" : "down";
+  const handleUpvote = () => {
+    const nextVote: VoteState = currentVote === "up" ? "not-voted" : "up";
+    handleVote(nextVote);
+  };
 
-    startTransition(async () => {
-      setOptimisticVote(nextVote);
-      const res = await setVoteComment(commentId, nextVote, `/posts/${postId}`);
-      if (!res.is_success) {
-        toast.error(`Error happened, ${res.message} \n${res.error}`);
-      }
-    });
-  }
+  const handleDownVote = () => {
+    const nextVote: VoteState = currentVote === "down" ? "not-voted" : "down";
+    handleVote(nextVote);
+  };
 
   return (
-    <div className="inline-flex items-center justify-center">
+    <div className="flex items-center bg-gray-100 rounded-full overflow-hidden">
       <Button
-        variant={"ghost"}
-        className="cursor-pointer"
+        variant="ghost"
+        size="icon"
+        className={`h-8 w-8 rounded-none hover:bg-gray-200 transition-colors ${
+          currentVote === "up" ? "text-orange-600 bg-orange-50" : "text-gray-500"
+        }`}
         onClick={handleUpvote}
       >
-        {optimisticVote.userVote === "up" ? (
-          <IconArrowBigUpFilled />
+        {currentVote === "up" ? (
+          <IconArrowBigUpFilled size={20} />
         ) : (
-          <IconArrowBigUp />
+          <IconArrowBigUp size={20} />
         )}
       </Button>
-      <span>{optimisticVote.score}</span>
+      <span className={`text-xs font-bold px-1 min-w-[1.5rem] text-center ${
+        currentVote === "up" ? "text-orange-600" : 
+        currentVote === "down" ? "text-blue-600" : "text-gray-700"
+      }`}>
+        {currentScore}
+      </span>
       <Button
-        variant={"ghost"}
-        className="cursor-pointer"
+        variant="ghost"
+        size="icon"
+        className={`h-8 w-8 rounded-none hover:bg-gray-200 transition-colors ${
+          currentVote === "down" ? "text-blue-600 bg-blue-50" : "text-gray-500"
+        }`}
         onClick={handleDownVote}
       >
-        {optimisticVote.userVote == "down" ? (
-          <IconArrowBigDownFilled />
+        {currentVote === "down" ? (
+          <IconArrowBigDownFilled size={20} />
         ) : (
-          <IconArrowBigDown />
+          <IconArrowBigDown size={20} />
         )}
       </Button>
     </div>

@@ -5,6 +5,7 @@ import { Comment, CommentRoot } from "@/types/posts";
 import { useState } from "react";
 import { CommentVotePill } from "./CommentVotePill";
 import CreateComment from "../../CreateComment";
+import { formatRelativeTime } from "@/lib/utils";
 import { 
   IconLoader2, 
   IconMessageCircle, 
@@ -32,15 +33,23 @@ export const CommentCard: React.FC<CommentProps> = ({
   const [extraReplies, setExtraReplies] = useState<Comment[]>([]);
   const [hasMore, setHasMore] = useState(comment.has_more);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [subCursor, setSubCursor] = useState<string | null>(null);
 
   const allReplies = [...(comment.replies || []), ...extraReplies];
 
   const handleLoadMore = async () => {
     setIsLoadingMore(true);
-    const res = await fetchSubComments(comment.id, sort);
+    const res = await fetchSubComments(comment.id, sort, subCursor || undefined);
     if (res.is_success) {
-      setExtraReplies(res.data);
-      setHasMore(false);
+      setExtraReplies(prev => {
+        const newComments = res.data.comments;
+        const filteredNew = newComments.filter(
+          (nc: Comment) => !prev.some((pc) => pc.id === nc.id) && !(comment.replies || []).some(rc => rc.id === nc.id)
+        );
+        return [...prev, ...filteredNew];
+      });
+      setSubCursor(res.data.nextCursor);
+      setHasMore(!!res.data.nextCursor);
     }
     setIsLoadingMore(false);
   };
@@ -55,34 +64,31 @@ export const CommentCard: React.FC<CommentProps> = ({
           <IconCirclePlus size={20} />
         </button>
         <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center text-[10px] font-bold text-gray-500">
+            {comment.author.name.charAt(0).toUpperCase()}
+          </div>
           <span className="font-bold text-xs text-gray-900">{comment.author.name}</span>
-          <span className="text-[10px] text-gray-500">Thread collapsed</span>
+          <span className="text-[10px] text-gray-500">• {formatRelativeTime(comment.created_at)}</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`mt-4 ${depth > 0 ? "ml-4" : ""} transition-all relative`}>
-      <div className="flex gap-x-2">
-        {/* Collapse Button & Vertical Line */}
-        {!hideReplies && (
-          <div className="flex flex-col items-center w-5">
-            <button 
-              onClick={() => setIsExpanded(false)}
-              className="text-gray-300 hover:text-gray-600 transition-colors z-10 bg-white"
-            >
-              <IconMinus 
-                size={16} 
-                className="border border-gray-200 rounded-full p-0.5" 
-              />
-            </button>
-            <div 
-              onClick={() => setIsExpanded(false)}
-              className="w-px h-full bg-gray-200 hover:bg-gray-400 hover:w-0.5 cursor-pointer transition-all" 
-            />
+    <div className={`mt-4 ${depth > 0 ? "ml-4 md:ml-6" : ""} transition-all relative`}>
+      <div className="flex gap-x-2 md:gap-x-3">
+        {/* Vertical Line & Avatar Area */}
+        <div className="flex flex-col items-center w-7 shrink-0">
+          <div className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center text-[10px] font-bold text-gray-500 mb-2 shrink-0">
+            {comment.author.name.charAt(0).toUpperCase()}
           </div>
-        )}
+          {!hideReplies && isExpanded && (
+            <div 
+              className="flex-1 w-px bg-gray-200 hover:bg-orange-400 hover:w-0.5 cursor-pointer transition-all" 
+              onClick={() => setIsExpanded(false)}
+            />
+          )}
+        </div>
 
         {/* Comment Content */}
         <div className="flex-1 min-w-0">
@@ -91,40 +97,57 @@ export const CommentCard: React.FC<CommentProps> = ({
               {comment.author.name}
             </span>
             <span className="text-[10px] text-gray-400 shrink-0">
-              {comment.created_at.toLocaleDateString()}
+              • {formatRelativeTime(comment.created_at)}
             </span>
-          </div>
-          
-          <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap break-words">
-            {comment.content}
-          </p>
-
-          <div className="flex items-center gap-x-4 mt-2 text-xs text-gray-500 font-bold">
-            <CommentVotePill
-              postId={postId}
-              commentId={comment.id}
-              score={comment.score}
-              voteState={comment.vote_state}
-            />
-            {!hideReplies && (
+            {!isExpanded && (
               <button 
-                onClick={() => setClickedReply(true)}
-                className="flex items-center gap-1 hover:bg-gray-100 px-2 py-1 rounded transition-colors"
+                onClick={() => setIsExpanded(true)}
+                className="text-gray-400 hover:text-gray-600 transition-colors ml-auto"
               >
-                <IconMessageCircle size={16} />
-                <span>Trả lời</span>
+                <IconCirclePlus size={18} />
               </button>
             )}
           </div>
+          
+          <div className="pb-2">
+            <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap break-words">
+              {comment.content}
+            </p>
+
+            <div className="flex items-center gap-x-3 mt-2 text-xs text-gray-500 font-medium">
+              <CommentVotePill
+                postId={postId}
+                commentId={comment.id}
+                score={comment.score}
+                voteState={comment.vote_state}
+              />
+              {!hideReplies && (
+                <button 
+                  onClick={() => setClickedReply(true)}
+                  className="flex items-center gap-1 hover:bg-gray-100 px-2 py-1 rounded transition-colors"
+                >
+                  <IconMessageCircle size={18} className="text-gray-400" />
+                  <span>Reply</span>
+                </button>
+              )}
+            </div>
+          </div>
 
           {!hideReplies && (
-            <div className="mt-2">
+            <div className="mt-1">
               <CreateComment
                 postId={postId}
                 parentId={comment.id}
                 replyTo={comment.author.name}
                 getClicked={() => clickedReply}
                 setClicked={setClickedReply}
+                onSuccess={() => {
+                  // Re-fetch all replies to show the new one
+                  // We clear existing extraReplies and subCursor to start fresh
+                  setExtraReplies([]);
+                  setSubCursor(null);
+                  handleLoadMore();
+                }}
               />
             </div>
           )}
@@ -156,7 +179,7 @@ export const CommentCard: React.FC<CommentProps> = ({
                         <IconCirclePlus size={20} />
                       )}
                     </div>
-                    <span>{comment.reply_count} tin nhắn trả lời khác</span>
+                    <span>{comment.reply_count} more replies</span>
                   </button>
                 </div>
               )}
