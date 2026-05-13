@@ -76,19 +76,23 @@ export function PostVotePill({ post, voteState }: VotePillProps) {
         onClick={handleUpvote}
       >
         {optimisticVote.userVote === "up" ? (
-          <IconArrowBigUpFilled />
+          <IconArrowBigUpFilled className="text-orange-700" />
         ) : (
           <IconArrowBigUp />
         )}
       </Button>
-      <span>{optimisticVote.score}</span>
+      <span
+        className={`font-bold ${optimisticVote.score < 0 ? "text-purple-800" : ""}`}
+      >
+        {optimisticVote.score}
+      </span>
       <Button
         variant={"ghost"}
         className="cursor-pointer"
         onClick={handleDownVote}
       >
         {optimisticVote.userVote == "down" ? (
-          <IconArrowBigDownFilled />
+          <IconArrowBigDownFilled className="text-blue-800" />
         ) : (
           <IconArrowBigDown />
         )}
