@@ -17,13 +17,13 @@ interface Props {
 export default function PostCard({ post, children }: Props) {
   return (
     <>
-      <Card className="border-none shadow-sm hover:ring-1 hover:ring-gray-200 transition-all">
+      <Card className="border-none shadow-sm transition-all hover:ring-1 hover:ring-border">
         <CardHeader className="pb-2">
-          <div className="flex items-center gap-2 text-[10px] text-gray-500 mb-1">
-            <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center font-bold text-gray-400">
+          <div className="mb-1 flex items-center gap-2 text-[10px] text-muted-foreground">
+            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-muted font-bold text-muted-foreground">
               {post.author?.name?.charAt(0).toUpperCase() || "U"}
             </div>
-            <span className="font-bold text-gray-900 hover:underline cursor-pointer">
+            <span className="cursor-pointer font-bold text-foreground hover:underline">
               {post.author?.name || "Unknown"}
             </span>
             <span>• {formatRelativeTime(post.created_at)}</span>
@@ -32,7 +32,7 @@ export default function PostCard({ post, children }: Props) {
             {post.title}
           </CardTitle>
         </CardHeader>
-        <CardContent className="text-sm text-gray-700 leading-normal py-2">
+        <CardContent className="text-sm leading-normal py-2">
           {post.content}
         </CardContent>
         <CardFooter className="pt-2">

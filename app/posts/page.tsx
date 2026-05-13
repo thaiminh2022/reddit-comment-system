@@ -1,6 +1,9 @@
 import LogoutButton from "@/components/LogoutButton";
+import PostLoadingSkeleton from "@/components/posts/PostLoadingSkeleton";
 import PostSortDropdown from "@/components/posts/PostSortDropdown";
+import PostRowDisplay from "@/components/posts/PostsRowDisplay";
 import SearchBar from "@/components/SearchBar";
+import ThemeToggle from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -13,8 +16,6 @@ import { parsePostSort } from "@/lib/posts/sort";
 import { IconPencil } from "@tabler/icons-react";
 import Link from "next/link";
 import { Suspense } from "react";
-import PostLoadingSkeleton from "@/components/posts/PostLoadingSkeleton";
-import PostRowDisplay from "@/components/posts/PostsRowDisplay";
 
 export default async function Page({
   searchParams,
@@ -43,6 +44,7 @@ export default async function Page({
                   Create Post
                 </Button>
               </Link>
+              <ThemeToggle />
             </div>
           </div>
         </CardContent>

@@ -1,11 +1,11 @@
 "use client";
 
 import { createComment } from "@/lib/actions/data";
-import CommentReplyBox from "./CommentReplyBox";
-import { Button } from "./ui/button";
-import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
+import CommentReplyBox from "./CommentReplyBox";
+import { Button } from "./ui/button";
 
 interface Props {
   postId: string;
@@ -38,7 +38,7 @@ export default function CreateComment({
 
   const submitAction = async (formData: FormData) => {
     const res = await createComment(postId, parentId, formData);
-    
+
     if (res.is_success) {
       toast.success(parentId ? "Reply posted!" : "Comment posted!");
       setIsClicked(false);
@@ -59,7 +59,7 @@ export default function CreateComment({
             variant={"outline"}
             type="button"
             onClick={() => setIsClicked(true)}
-            className="w-full cursor-pointer rounded-lg border-gray-200 hover:bg-gray-50 text-gray-500 justify-start px-4 h-12 text-sm font-medium"
+            className="h-12 w-full cursor-pointer justify-start rounded-lg border-border px-4 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
           >
             What are your thoughts?
           </Button>

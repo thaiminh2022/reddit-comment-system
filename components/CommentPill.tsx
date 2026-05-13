@@ -8,10 +8,10 @@ interface Props {
 
 export default function CommentPill({ onClick, commentCount }: Props) {
   return (
-    <div className="inline-flex rounded-full bg-slate-50">
+    <div className="flex h-9.5 items-center rounded-full border border-border bg-muted px-1">
       <Button
         variant="ghost"
-        className="rounded-full cursor-pointer"
+        className="h-9 rounded-full px-3 text-foreground cursor-pointer"
         onClick={onClick}
         type="button"
       >

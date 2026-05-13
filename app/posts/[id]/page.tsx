@@ -4,6 +4,7 @@ import PostCommentSortDropdown from "@/components/posts/post_interaction/PostCom
 import PostCommentsView from "@/components/posts/post_interaction/PostCommentsView";
 import PostCard from "@/components/posts/PostCard";
 import SearchBar from "@/components/SearchBar";
+import ThemeToggle from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { fetchPostJoinAuthorRow } from "@/lib/actions/data";
 import { getPostVoteState } from "@/lib/actions/updownvote";
@@ -39,12 +40,15 @@ export default async function Page({
 
   return (
     <div className="flex flex-col gap-y-5">
-      <Link href={"/posts"}>
-        <Button variant={"link"}>
-          <IconArrowLeft />
-          Back to posts
-        </Button>
-      </Link>
+      <div className="flex justify-between">
+        <Link href={"/posts"}>
+          <Button variant={"link"} className="cursor-pointer text-link">
+            <IconArrowLeft />
+            Back to posts
+          </Button>
+        </Link>
+        <ThemeToggle />
+      </div>
       <PostCard post={post}>
         <PostCommentActionBar post={post} voteState={voteState} />
       </PostCard>

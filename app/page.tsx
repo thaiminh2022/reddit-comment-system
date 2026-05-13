@@ -34,18 +34,18 @@ export default function HomePage() {
     setUsername(randomName);
   };
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4 text-foreground">
       {/* Website Identity */}
       <div className="mb-8 text-center">
-        <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl text-slate-900">
+        <h1 className="text-4xl font-extrabold tracking-tight text-foreground lg:text-5xl">
           <span className="text-orange-600">Reddit</span> Comment System
         </h1>
-        <p className="text-slate-500 mt-2">
+        <p className="mt-2 text-muted-foreground">
           A reddit clone with only posts and the comment system
         </p>
       </div>
 
-      <Card className="w-full max-w-md shadow-xl border-slate-200">
+      <Card className="w-full max-w-md border-border shadow-xl">
         <CardHeader>
           <CardTitle>Welcome</CardTitle>
           <CardDescription>
@@ -56,7 +56,7 @@ export default function HomePage() {
           <form action={formAction} className="space-y-4">
             <div className="space-y-2">
               <div className="relative">
-                <User className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="username-input"
                   name="username"
@@ -70,7 +70,7 @@ export default function HomePage() {
               </div>
 
               {state?.error && (
-                <p className="text-sm text-red-600">{state.error}</p>
+                <p className="text-sm text-destructive">{state.error}</p>
               )}
             </div>
 
@@ -94,7 +94,7 @@ export default function HomePage() {
                 type="button"
                 variant="outline"
                 onClick={handleRandomize}
-                className="w-full border-slate-300 gap-2"
+                className="w-full gap-2 border-border"
                 disabled={isPending}
               >
                 <Sparkles className="h-4 w-4 text-amber-500" />
@@ -105,7 +105,7 @@ export default function HomePage() {
         </CardContent>
       </Card>
 
-      <footer className="mt-12 text-slate-400 text-sm">
+      <footer className="mt-12 text-sm text-muted-foreground">
         © 2026 Nhom 9 hay cl j do quen r
       </footer>
     </div>
