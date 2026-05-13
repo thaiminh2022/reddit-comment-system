@@ -5,12 +5,18 @@ import { Comment, CommentRoot } from "@/types/posts";
 import { useState } from "react";
 import { CommentVotePill } from "./CommentVotePill";
 import CreateComment from "../../CreateComment";
-import { 
-  IconLoader2, 
-  IconMessageCircle, 
+import {
+  IconLoader2,
+  IconMessageCircle,
   IconMinus,
-  IconCirclePlus
+  IconCirclePlus,
 } from "@tabler/icons-react";
+import { timeAgo } from "@/lib/helper";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface CommentProps {
   postId: string;
@@ -47,15 +53,19 @@ export const CommentCard: React.FC<CommentProps> = ({
 
   if (!isExpanded && !hideReplies) {
     return (
-      <div className={`mt-3 ${depth > 0 ? "ml-4" : ""} flex items-center gap-2`}>
-        <button 
+      <div
+        className={`mt-3 ${depth > 0 ? "ml-4" : ""} flex items-center gap-2`}
+      >
+        <button
           onClick={() => setIsExpanded(true)}
           className="text-gray-400 hover:text-gray-600 transition-colors"
         >
           <IconCirclePlus size={20} />
         </button>
         <div className="flex items-center gap-2">
-          <span className="font-bold text-xs text-gray-900">{comment.author.name}</span>
+          <span className="font-bold text-xs text-gray-900">
+            {comment.author.name}
+          </span>
           <span className="text-[10px] text-gray-500">Thread collapsed</span>
         </div>
       </div>
@@ -68,18 +78,18 @@ export const CommentCard: React.FC<CommentProps> = ({
         {/* Collapse Button & Vertical Line */}
         {!hideReplies && (
           <div className="flex flex-col items-center w-5">
-            <button 
+            <button
               onClick={() => setIsExpanded(false)}
               className="text-gray-300 hover:text-gray-600 transition-colors z-10 bg-white"
             >
-              <IconMinus 
-                size={16} 
-                className="border border-gray-200 rounded-full p-0.5" 
+              <IconMinus
+                size={16}
+                className="border border-gray-200 rounded-full p-0.5"
               />
             </button>
-            <div 
+            <div
               onClick={() => setIsExpanded(false)}
-              className="w-px h-full bg-gray-200 hover:bg-gray-400 hover:w-0.5 cursor-pointer transition-all" 
+              className="w-px h-full bg-gray-200 hover:bg-gray-400 hover:w-0.5 cursor-pointer transition-all"
             />
           </div>
         )}
@@ -91,10 +101,17 @@ export const CommentCard: React.FC<CommentProps> = ({
               {comment.author.name}
             </span>
             <span className="text-[10px] text-gray-400 shrink-0">
-              {comment.created_at.toLocaleDateString()}
+              <Tooltip>
+                <TooltipTrigger className="underline">
+                  {timeAgo(comment.created_at)}
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{comment.created_at.toLocaleDateString()}</p>
+                </TooltipContent>
+              </Tooltip>
             </span>
           </div>
-          
+
           <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap break-words">
             {comment.content}
           </p>
@@ -107,7 +124,7 @@ export const CommentCard: React.FC<CommentProps> = ({
               voteState={comment.vote_state}
             />
             {!hideReplies && (
-              <button 
+              <button
                 onClick={() => setClickedReply(true)}
                 className="flex items-center gap-1 hover:bg-gray-100 px-2 py-1 rounded transition-colors"
               >
@@ -141,7 +158,7 @@ export const CommentCard: React.FC<CommentProps> = ({
                   depth={depth + 1}
                 />
               ))}
-              
+
               {hasMore && (
                 <div className="mt-2 flex items-center gap-2">
                   <button

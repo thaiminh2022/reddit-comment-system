@@ -8,6 +8,8 @@ import {
   CardHeader,
   CardTitle,
 } from "../ui/card";
+import { timeAgo } from "@/lib/helper";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 interface Props {
   post: PostJoinAuthor;
@@ -19,9 +21,19 @@ export default function PostCard({ post, children }: Props) {
     <>
       <Card>
         <CardHeader>
-          <CardTitle>{post.title}</CardTitle>
-          <CardDescription>
-            Author: {post.author?.name || "Unknown"}
+          <CardTitle>
+            <main>{post.title}</main>
+          </CardTitle>
+          <CardDescription className="flex justify-between flex-wrap">
+            <div> Author: {post.author?.name || "Unknown"}</div>
+            <Tooltip>
+              <TooltipTrigger className="underline">
+                {timeAgo(post.created_at)}
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{new Date(post.created_at).toLocaleDateString()}</p>
+              </TooltipContent>
+            </Tooltip>
           </CardDescription>
         </CardHeader>
         <CardContent>{post.content}</CardContent>
