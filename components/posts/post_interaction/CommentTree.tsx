@@ -21,8 +21,21 @@ export async function CommentTree({
         {isSearch ? "Search Results" : "Discussion"}
       </h2>
       {comments.length === 0 && isSearch && (
-        <div className="text-center py-10 text-muted-foreground">
-          No comments found matching your search.
+        <div className="rounded-md border border-dashed py-12 text-center">
+          <p className="text-sm font-medium text-gray-900">
+            No matching comments
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Try a shorter search term or clear the search field.
+          </p>
+        </div>
+      )}
+      {comments.length === 0 && !isSearch && (
+        <div className="rounded-md border border-dashed py-12 text-center">
+          <p className="text-sm font-medium text-gray-900">No comments yet</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Start the discussion with the first reply.
+          </p>
         </div>
       )}
       {comments.map((comment) => (

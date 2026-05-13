@@ -54,7 +54,7 @@ export const CommentCard: React.FC<CommentProps> = ({
   if (!isExpanded && !hideReplies) {
     return (
       <div
-        className={`mt-3 ${depth > 0 ? "ml-4" : ""} flex items-center gap-2`}
+        className={`mt-3 ${depth > 0 ? "ml-2 sm:ml-4" : ""} flex items-center gap-2`}
       >
         <button
           onClick={() => setIsExpanded(true)}
@@ -73,7 +73,7 @@ export const CommentCard: React.FC<CommentProps> = ({
   }
 
   return (
-    <div className={`mt-4 ${depth > 0 ? "ml-4" : ""} transition-all relative`}>
+    <div className={`mt-4 ${depth > 0 ? "ml-2 sm:ml-4" : ""} transition-all relative`}>
       <div className="flex gap-x-2">
         {/* Collapse Button & Vertical Line */}
         {!hideReplies && (

@@ -1,6 +1,6 @@
 export const commentSortOptions = [
   { value: "newest", label: "Newest", group: "main" },
-  { value: "hot", label: "Hot", group: "main" },
+  { value: "hot", label: "Most active", group: "main" },
   { value: "top-all-time", label: "All time", group: "top" },
   { value: "top-past-year", label: "Past year", group: "top" },
   { value: "top-past-month", label: "Past month", group: "top" },
