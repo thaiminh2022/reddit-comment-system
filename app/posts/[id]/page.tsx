@@ -42,7 +42,7 @@ export default async function Page({
     <div className="flex flex-col gap-y-5">
       <div className="flex justify-between">
         <Link href={"/posts"}>
-          <Button variant={"link"}>
+          <Button variant={"link"} className="cursor-pointer text-link">
             <IconArrowLeft />
             Back to posts
           </Button>
