@@ -1,17 +1,16 @@
 "use client";
 import { fetchSubComments } from "@/lib/actions/data";
 import type { CommentSort } from "@/lib/comments/sort";
+import { formatRelativeTime } from "@/lib/helper";
 import { Comment, CommentRoot } from "@/types/posts";
-import { useState } from "react";
-import { CommentVotePill } from "./CommentVotePill";
-import CreateComment from "../../CreateComment";
-import { formatRelativeTime } from "@/lib/utils";
-import { 
-  IconLoader2, 
-  IconMessageCircle, 
-  IconMinus,
-  IconCirclePlus
+import {
+  IconCirclePlus,
+  IconLoader2,
+  IconMessageCircle,
 } from "@tabler/icons-react";
+import { useState } from "react";
+import CreateComment from "../../CreateComment";
+import { CommentVotePill } from "./CommentVotePill";
 
 interface CommentProps {
   postId: string;
@@ -39,12 +38,18 @@ export const CommentCard: React.FC<CommentProps> = ({
 
   const handleLoadMore = async () => {
     setIsLoadingMore(true);
-    const res = await fetchSubComments(comment.id, sort, subCursor || undefined);
+    const res = await fetchSubComments(
+      comment.id,
+      sort,
+      subCursor || undefined,
+    );
     if (res.is_success) {
-      setExtraReplies(prev => {
+      setExtraReplies((prev) => {
         const newComments = res.data.comments;
         const filteredNew = newComments.filter(
-          (nc: Comment) => !prev.some((pc) => pc.id === nc.id) && !(comment.replies || []).some(rc => rc.id === nc.id)
+          (nc: Comment) =>
+            !prev.some((pc) => pc.id === nc.id) &&
+            !(comment.replies || []).some((rc) => rc.id === nc.id),
         );
         return [...prev, ...filteredNew];
       });
@@ -56,8 +61,10 @@ export const CommentCard: React.FC<CommentProps> = ({
 
   if (!isExpanded && !hideReplies) {
     return (
-      <div className={`mt-3 ${depth > 0 ? "ml-4" : ""} flex items-center gap-2`}>
-        <button 
+      <div
+        className={`mt-3 ${depth > 0 ? "ml-4" : ""} flex items-center gap-2`}
+      >
+        <button
           onClick={() => setIsExpanded(true)}
           className="text-gray-400 hover:text-gray-600 transition-colors"
         >
@@ -67,15 +74,21 @@ export const CommentCard: React.FC<CommentProps> = ({
           <div className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center text-[10px] font-bold text-gray-500">
             {comment.author.name.charAt(0).toUpperCase()}
           </div>
-          <span className="font-bold text-xs text-gray-900">{comment.author.name}</span>
-          <span className="text-[10px] text-gray-500">• {formatRelativeTime(comment.created_at)}</span>
+          <span className="font-bold text-xs text-gray-900">
+            {comment.author.name}
+          </span>
+          <span className="text-[10px] text-gray-500">
+            • {formatRelativeTime(comment.created_at)}
+          </span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`mt-4 ${depth > 0 ? "ml-4 md:ml-6" : ""} transition-all relative`}>
+    <div
+      className={`mt-4 ${depth > 0 ? "ml-4 md:ml-6" : ""} transition-all relative`}
+    >
       <div className="flex gap-x-2 md:gap-x-3">
         {/* Vertical Line & Avatar Area */}
         <div className="flex flex-col items-center w-7 shrink-0">
@@ -83,8 +96,8 @@ export const CommentCard: React.FC<CommentProps> = ({
             {comment.author.name.charAt(0).toUpperCase()}
           </div>
           {!hideReplies && isExpanded && (
-            <div 
-              className="flex-1 w-px bg-gray-200 hover:bg-orange-400 hover:w-0.5 cursor-pointer transition-all" 
+            <div
+              className="flex-1 w-px bg-gray-200 hover:bg-orange-400 hover:w-0.5 cursor-pointer transition-all"
               onClick={() => setIsExpanded(false)}
             />
           )}
@@ -100,7 +113,7 @@ export const CommentCard: React.FC<CommentProps> = ({
               • {formatRelativeTime(comment.created_at)}
             </span>
             {!isExpanded && (
-              <button 
+              <button
                 onClick={() => setIsExpanded(true)}
                 className="text-gray-400 hover:text-gray-600 transition-colors ml-auto"
               >
@@ -108,7 +121,7 @@ export const CommentCard: React.FC<CommentProps> = ({
               </button>
             )}
           </div>
-          
+
           <div className="pb-2">
             <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap break-words">
               {comment.content}
@@ -122,7 +135,7 @@ export const CommentCard: React.FC<CommentProps> = ({
                 voteState={comment.vote_state}
               />
               {!hideReplies && (
-                <button 
+                <button
                   onClick={() => setClickedReply(true)}
                   className="flex items-center gap-1 hover:bg-gray-100 px-2 py-1 rounded transition-colors"
                 >
@@ -164,7 +177,7 @@ export const CommentCard: React.FC<CommentProps> = ({
                   depth={depth + 1}
                 />
               ))}
-              
+
               {hasMore && (
                 <div className="mt-2 flex items-center gap-2">
                   <button

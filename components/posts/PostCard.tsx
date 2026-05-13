@@ -1,10 +1,9 @@
+import { formatRelativeTime } from "@/lib/helper";
 import { PostJoinAuthor } from "@/types/db_schema";
-import { formatRelativeTime } from "@/lib/utils";
 import {
   Card,
   CardAction,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -29,7 +28,9 @@ export default function PostCard({ post, children }: Props) {
             </span>
             <span>• {formatRelativeTime(post.created_at)}</span>
           </div>
-          <CardTitle className="text-lg font-bold leading-tight">{post.title}</CardTitle>
+          <CardTitle className="text-lg font-bold leading-tight">
+            {post.title}
+          </CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-gray-700 leading-normal py-2">
           {post.content}

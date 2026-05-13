@@ -1,7 +1,6 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { slugify } from "@/lib/utils";
 import {
   createErrorResponse,
   createSuccessResponse,
@@ -9,6 +8,7 @@ import {
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { slugify } from "../helper";
 
 /** Default password used for all username-based accounts. */
 const DEFAULT_PASSWORD = "reddit-comment-system-default-pwd-2026";
