@@ -329,7 +329,10 @@ export async function fetchComments(
     const lastRoot = rootsToProcess[rootsToProcess.length - 1];
     nextCursor = encodeCommentCursor({
       id: lastRoot.id,
-      created_at: lastRoot.created_at,
+      created_at:
+        lastRoot.created_at instanceof Date
+          ? lastRoot.created_at.toISOString()
+          : lastRoot.created_at,
       score: lastRoot.score,
       reply_count: lastRoot.reply_count
     });
@@ -410,7 +413,10 @@ export async function fetchSubComments(
     const lastComment = resultRows[resultRows.length - 1];
     nextCursor = encodeCommentCursor({
       id: lastComment.id,
-      created_at: lastComment.created_at,
+      created_at:
+        lastComment.created_at instanceof Date
+          ? lastComment.created_at.toISOString()
+          : lastComment.created_at,
       score: lastComment.score,
       reply_count: lastComment.reply_count
     });
