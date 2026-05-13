@@ -1,5 +1,8 @@
+import CommentLoadingSkeleton from "@/components/posts/post_interaction/CommentLoadingSkeleton";
 import { CommentTree } from "@/components/posts/post_interaction/CommentTree";
 import PostCommentActionBar from "@/components/posts/post_interaction/PostCommentActionBar";
+import PostCommentSortDropdown from "@/components/posts/post_interaction/PostCommentSortDropdown";
+import PostCommentsView from "@/components/posts/post_interaction/PostCommentsView";
 import PostCard from "@/components/posts/PostCard";
 import PostSortDropdown from "@/components/posts/PostSortDropdown";
 import SearchBar from "@/components/SearchBar";
@@ -10,7 +13,9 @@ import {
   searchComments,
 } from "@/lib/actions/data";
 import { getPostVoteState } from "@/lib/actions/updownvote";
+import { parseCommentSort } from "@/lib/comments/sort";
 import Link from "next/link";
+import { Suspense } from "react";
 
 export default async function Page({
   params,
@@ -20,19 +25,15 @@ export default async function Page({
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const { id } = await params;
-  const { q } = await searchParams;
-  const search = typeof q === "string" ? q : undefined;
+  const sParams = await searchParams;
+  const sort = parseCommentSort(sParams.sort);
+  const search = typeof sParams.q === "string" ? sParams.q : undefined;
 
   const postRes = await fetchPostJoinAuthorRow(id);
   if (!postRes.is_success) {
     return <>No Post</>;
   }
   const post = postRes.data;
-
-  // Fetch comments based on whether there's a search query
-  const commentsRes = search
-    ? await searchComments(id, search)
-    : await fetchComments(id);
 
   const voteStateRes = await getPostVoteState(post.id);
   if (!voteStateRes.is_success) {
@@ -56,21 +57,12 @@ export default async function Page({
           placeholder="Search comments..."
           className="w-full max-w-xl"
         />
-        <PostSortDropdown value={"newest"} />
+        <PostCommentSortDropdown value={sort} />
       </div>
 
-      {commentsRes.is_success && (
-        <CommentTree
-          postId={id}
-          comments={commentsRes.data}
-          isSearch={!!search}
-        />
-      )}
-      {!commentsRes.is_success && (
-        <div className="rounded-md p-2  bg-red-100">
-          Error fetching comments: {commentsRes.message}
-        </div>
-      )}
+      <Suspense fallback={<CommentLoadingSkeleton />}>
+        <PostCommentsView search={search} postId={id} />
+      </Suspense>
     </div>
   );
 }
