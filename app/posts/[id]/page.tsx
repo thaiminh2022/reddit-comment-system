@@ -1,9 +1,16 @@
 import { CommentTree } from "@/components/posts/post_interaction/CommentTree";
 import PostCommentActionBar from "@/components/posts/post_interaction/PostCommentActionBar";
 import PostCard from "@/components/posts/PostCard";
+import PostSortDropdown from "@/components/posts/PostSortDropdown";
 import SearchBar from "@/components/SearchBar";
-import { fetchComments, fetchPostJoinAuthorRow, searchComments } from "@/lib/actions/data";
+import { Button } from "@/components/ui/button";
+import {
+  fetchComments,
+  fetchPostJoinAuthorRow,
+  searchComments,
+} from "@/lib/actions/data";
 import { getPostVoteState } from "@/lib/actions/updownvote";
+import Link from "next/link";
 
 export default async function Page({
   params,
@@ -40,8 +47,13 @@ export default async function Page({
         <PostCommentActionBar post={post} voteState={voteState} />
       </PostCard>
 
-      <div className="px-4">
+      <Link href={"/posts"}>
+        <Button variant={"link"}>Back to posts</Button>
+      </Link>
+
+      <div className="flex justify-between w-full">
         <SearchBar placeholder="Search comments..." className="max-w-md" />
+        <PostSortDropdown value={"newest"} />
       </div>
 
       {commentsRes.is_success && (
