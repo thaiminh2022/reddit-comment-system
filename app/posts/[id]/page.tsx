@@ -52,7 +52,10 @@ export default async function Page({
       </Link>
 
       <div className="flex justify-between w-full">
-        <SearchBar placeholder="Search comments..." className="max-w-md" />
+        <SearchBar
+          placeholder="Search comments..."
+          className="w-full max-w-xl"
+        />
         <PostSortDropdown value={"newest"} />
       </div>
 
