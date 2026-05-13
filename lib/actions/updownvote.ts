@@ -165,10 +165,9 @@ export async function setVotePost(
     if (error) {
       return createErrorResponse(error.message, error);
     }
-    if (pathname) {
-      revalidatePath(pathname);
-    }
-    revalidatePath("/posts");
+    
+    // Removing revalidatePath to prevent flickering in Infinite Lists
+    // revalidatePath("/posts");
 
     return createSuccessResponse(null);
   }
@@ -193,10 +192,8 @@ export async function setVotePost(
     return createErrorResponse(error.message, error);
   }
 
-  if (pathname) {
-    revalidatePath(pathname);
-  }
-  revalidatePath("/posts");
+  // Removing revalidatePath to prevent flickering in Infinite Lists
+  // revalidatePath("/posts");
 
   return createSuccessResponse(data as PostVoteRow);
 }
@@ -224,9 +221,7 @@ export async function setVoteComment(
     if (error) {
       return createErrorResponse(error.message, error);
     }
-    if (pathname) {
-      revalidatePath(pathname);
-    }
+    
     return createSuccessResponse(null);
   }
 
@@ -248,10 +243,6 @@ export async function setVoteComment(
 
   if (error) {
     return createErrorResponse(error.message, error);
-  }
-
-  if (pathname) {
-    revalidatePath(pathname);
   }
 
   return createSuccessResponse(data as CommentVoteRow);

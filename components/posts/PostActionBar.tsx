@@ -1,3 +1,5 @@
+"use client";
+
 import { PostRow } from "@/types/db_schema";
 import { IconBubblePlus } from "@tabler/icons-react";
 import Link from "next/link";

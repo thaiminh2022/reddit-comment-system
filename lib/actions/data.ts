@@ -184,43 +184,106 @@ export async function fetchPostJoinAuthorRow(uuid: string) {
   return createSuccessResponse(dataPost);
 }
 
-export async function fetchComments(postID: string, sort: CommentSort) {
-  const supabase = await createClient();
+type CommentCursor = {
+  id: string;
+  created_at: string;
+  score: number;
+  reply_count: number;
+};
 
-  // Fetch only top-level (level 1) and second-level (level 2) comments
-  // To do this efficiently in one query, we can fetch comments where parent_id is null
-  // OR where parent_id is in the set of root comment IDs.
-  // But a simpler approach for a "Reddit" style is to fetch root comments first,
-  // then fetch children for those roots.
-  
-  // 1. Fetch root comments
-  const rootQuery = supabase
+function encodeCommentCursor(data: CommentCursor): string {
+  return Buffer.from(JSON.stringify(data)).toString("base64");
+}
+
+function decodeCommentCursor(cursor: string): CommentCursor | null {
+  try {
+    return JSON.parse(Buffer.from(cursor, "base64").toString("utf-8"));
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchComments(
+  postID: string, 
+  sort: CommentSort,
+  cursor?: string,
+  pageSize: number = 20
+) {
+  const supabase = await createClient();
+  const decoded = cursor ? decodeCommentCursor(cursor) : null;
+
+  // 1. Fetch root comments with pagination
+  let rootQuery = supabase
     .from("comments")
     .select(COMMENT_WITH_AUTHOR_AND_VOTE_SELECT)
     .eq("post_id", postID)
-    .is("parent_id", null);
+    .is("parent_id", null)
+    .limit(pageSize + 1);
 
-  const { data: rootRows, error: rootError } = await applyCommentSort(
-    rootQuery,
-    sort,
-  );
+  // Apply cursor logic to root comments
+  if (sort === "newest") {
+    rootQuery = rootQuery.order("created_at", { ascending: false }).order("id", { ascending: false });
+    if (decoded) {
+      rootQuery = rootQuery.or(`created_at.lt.${decoded.created_at},and(created_at.eq.${decoded.created_at},id.lt.${decoded.id})`);
+    }
+  } else if (sort === "hot") {
+    rootQuery = rootQuery
+      .order("reply_count", { ascending: false })
+      .order("score", { ascending: false })
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false });
+    
+    if (decoded) {
+      rootQuery = rootQuery.or(
+        `reply_count.lt.${decoded.reply_count},` +
+        `and(reply_count.eq.${decoded.reply_count},score.lt.${decoded.score}),` +
+        `and(reply_count.eq.${decoded.reply_count},score.eq.${decoded.score},created_at.lt.${decoded.created_at}),` +
+        `and(reply_count.eq.${decoded.reply_count},score.eq.${decoded.score},created_at.eq.${decoded.created_at},id.lt.${decoded.id})`
+      );
+    }
+  } else { // Top sorts
+    rootQuery = rootQuery
+      .order("score", { ascending: false })
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false });
+
+    if (decoded) {
+      rootQuery = rootQuery.or(
+        `score.lt.${decoded.score},` +
+        `and(score.eq.${decoded.score},created_at.lt.${decoded.created_at}),` +
+        `and(score.eq.${decoded.score},created_at.eq.${decoded.created_at},id.lt.${decoded.id})`
+      );
+    }
+  }
+
+  // Time filters for Top sorts
+  if (sort === "top-past-year") {
+    rootQuery = rootQuery.gte("created_at", getIsoDateMonthsAgo(12));
+  } else if (sort === "top-past-month") {
+    rootQuery = rootQuery.gte("created_at", getIsoDateMonthsAgo(1));
+  }
+
+  const { data: rootRows, error: rootError } = await rootQuery;
 
   if (rootError) {
     console.error(`Error fetching root comments for post ${postID}:`, rootError);
     return createErrorResponse(rootError.message, rootError);
   }
 
-  const roots = rootRows as CommentJoinAuthorAndVote[];
-  const rootIds = roots.map(r => r.id);
+  const rootsRaw = rootRows as CommentJoinAuthorAndVote[];
+  const hasNextPage = rootsRaw.length > pageSize;
+  const rootsToProcess = hasNextPage ? rootsRaw.slice(0, pageSize) : rootsRaw;
+  const rootIds = rootsToProcess.map(r => r.id);
 
-  // 2. Fetch level 2 comments (children of roots)
+  // 2. Fetch level 2 comments (children of these roots)
   let level2Rows: CommentJoinAuthorAndVote[] = [];
   if (rootIds.length > 0) {
-    const level2Query = supabase
+    let level2Query = supabase
       .from("comments")
       .select(COMMENT_WITH_AUTHOR_AND_VOTE_SELECT)
       .in("parent_id", rootIds);
 
+    // Sort level 2 comments same as roots for consistency
     const { data: l2Data, error: l2Error } = await applyCommentSort(
       level2Query,
       sort,
@@ -235,7 +298,7 @@ export async function fetchComments(postID: string, sort: CommentSort) {
   const rootComments: CommentRoot[] = [];
 
   // Create root objects
-  for (const row of roots) {
+  for (const row of rootsToProcess) {
     const comment = mapCommentRowToComment(row);
     commentMap.set(row.id, comment);
     rootComments.push(comment);
@@ -249,35 +312,90 @@ export async function fetchComments(postID: string, sort: CommentSort) {
     const parent = commentMap.get(row.parent_id!);
     if (parent) {
       parent.replies.push(comment);
-      // For level 2, we indicate there's more if reply_count > 0
       comment.has_more = row.reply_count > 0;
     }
   }
 
-  // Final check: root comments also need has_more=false if we fetched their replies
-  // Actually, root comments' replies are level 2. If a root has reply_count > 0, 
-  // we already fetched some. We should only set has_more if there are replies NOT fetched.
-  // In this logic, we fetched ALL direct children of roots. 
-  // So root comments themselves don't have "more" direct children.
+  // Final check for has_more on roots
   for (const root of rootComments) {
+    // Root's children we fetched are level 2. 
+    // We fetched ALL level 2 children for these roots.
+    // So root.replies contains all immediate children.
     root.has_more = false; 
   }
 
-  return createSuccessResponse(rootComments);
+  let nextCursor: string | null = null;
+  if (hasNextPage) {
+    const lastRoot = rootsToProcess[rootsToProcess.length - 1];
+    nextCursor = encodeCommentCursor({
+      id: lastRoot.id,
+      created_at:
+        lastRoot.created_at instanceof Date
+          ? lastRoot.created_at.toISOString()
+          : lastRoot.created_at,
+      score: lastRoot.score,
+      reply_count: lastRoot.reply_count
+    });
+  }
+
+  return createSuccessResponse({
+    comments: rootComments,
+    nextCursor,
+  });
 }
 
 export async function fetchSubComments(
   parentId: string,
   sort: CommentSort,
+  cursor?: string,
+  pageSize: number = 10
 ) {
   const supabase = await createClient();
+  const decoded = cursor ? decodeCommentCursor(cursor) : null;
 
-  const query = supabase
+  let query = supabase
     .from("comments")
     .select(COMMENT_WITH_AUTHOR_AND_VOTE_SELECT)
-    .eq("parent_id", parentId);
+    .eq("parent_id", parentId)
+    .limit(pageSize + 1);
 
-  const { data, error } = await applyCommentSort(query, sort);
+  // Apply cursor logic
+  if (sort === "newest") {
+    query = query.order("created_at", { ascending: false }).order("id", { ascending: false });
+    if (decoded) {
+      query = query.or(`created_at.lt.${decoded.created_at},and(created_at.eq.${decoded.created_at},id.lt.${decoded.id})`);
+    }
+  } else if (sort === "hot") {
+    query = query
+      .order("reply_count", { ascending: false })
+      .order("score", { ascending: false })
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false });
+    
+    if (decoded) {
+      query = query.or(
+        `reply_count.lt.${decoded.reply_count},` +
+        `and(reply_count.eq.${decoded.reply_count},score.lt.${decoded.score}),` +
+        `and(reply_count.eq.${decoded.reply_count},score.eq.${decoded.score},created_at.lt.${decoded.created_at}),` +
+        `and(reply_count.eq.${decoded.reply_count},score.eq.${decoded.score},created_at.eq.${decoded.created_at},id.lt.${decoded.id})`
+      );
+    }
+  } else {
+    query = query
+      .order("score", { ascending: false })
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false });
+
+    if (decoded) {
+      query = query.or(
+        `score.lt.${decoded.score},` +
+        `and(score.eq.${decoded.score},created_at.lt.${decoded.created_at}),` +
+        `and(score.eq.${decoded.score},created_at.eq.${decoded.created_at},id.lt.${decoded.id})`
+      );
+    }
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error(`Error fetching sub-comments for ${parentId}:`, error);
@@ -285,9 +403,29 @@ export async function fetchSubComments(
   }
 
   const rows = data as CommentJoinAuthorAndVote[];
-  const comments = rows.map(mapCommentRowToComment);
+  const hasNextPage = rows.length > pageSize;
+  const resultRows = hasNextPage ? rows.slice(0, pageSize) : rows;
+  
+  const comments = resultRows.map(mapCommentRowToComment);
 
-  return createSuccessResponse(comments);
+  let nextCursor: string | null = null;
+  if (hasNextPage) {
+    const lastComment = resultRows[resultRows.length - 1];
+    nextCursor = encodeCommentCursor({
+      id: lastComment.id,
+      created_at:
+        lastComment.created_at instanceof Date
+          ? lastComment.created_at.toISOString()
+          : lastComment.created_at,
+      score: lastComment.score,
+      reply_count: lastComment.reply_count
+    });
+  }
+
+  return createSuccessResponse({
+    comments,
+    nextCursor
+  });
 }
 
 export async function searchComments(postID: string, search: string, sort: CommentSort) {
