@@ -26,6 +26,7 @@ export type Comment = {
   is_deleted: boolean;
   replies: Comment[];
   has_more?: boolean; // Indicates if there are deeper replies not fetched
+  vote_state: "up" | "down" | "not-voted";
 };
 
 export type CommentRoot = Comment;
@@ -35,4 +36,3 @@ export type PaginatedPosts = {
   nextCursor: string | null;
   pageSize: number;
 };
-

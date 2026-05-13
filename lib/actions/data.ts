@@ -19,15 +19,38 @@ import { AuthError, PostgrestError } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { CommentSort } from "../comments/sort";
 
-function encodeCursor(data: any): string {
+type CommentJoinAuthorAndVote = CommentJoinAuthor & {
+  user_vote?: { value: -1 | 1 }[] | null;
+};
+
+type PostCursor = {
+  id: string;
+  created_at: string;
+  score: number;
+  total_comment_count: number;
+};
+
+type CommentQuery<T> = {
+  order: (column: string, options: { ascending: boolean }) => T;
+  gte: (column: string, value: string) => T;
+};
+
+const COMMENT_WITH_AUTHOR_AND_VOTE_SELECT = `
+  *,
+  author:profiles!comments_author_id_fkey(id, name),
+  user_vote:comment_votes(value)
+`;
+
+function encodeCursor(data: PostCursor): string {
   return Buffer.from(JSON.stringify(data)).toString("base64");
 }
 
-function decodeCursor(cursor: string): any {
+function decodeCursor(cursor: string): PostCursor | null {
   try {
     return JSON.parse(Buffer.from(cursor, "base64").toString("utf-8"));
-  } catch (e) {
+  } catch {
     return null;
   }
 }
@@ -106,7 +129,7 @@ export async function fetchPostJoinAuthorRows(
     return createErrorResponse(error.message, error);
   }
 
-  const posts = (data as any[]).map((row) => ({
+  const posts = (data as PostJoinAuthor[]).map((row) => ({
     ...row,
     created_at: new Date(row.created_at),
   })) as PostJoinAuthor[];
@@ -161,7 +184,7 @@ export async function fetchPostJoinAuthorRow(uuid: string) {
   return createSuccessResponse(dataPost);
 }
 
-export async function fetchComments(postID: string) {
+export async function fetchComments(postID: string, sort: CommentSort) {
   const supabase = await createClient();
 
   // Fetch only top-level (level 1) and second-level (level 2) comments
@@ -171,66 +194,56 @@ export async function fetchComments(postID: string) {
   // then fetch children for those roots.
   
   // 1. Fetch root comments
-  const { data: rootRows, error: rootError } = await supabase
+  const rootQuery = supabase
     .from("comments")
-    .select(`*, author:profiles!comments_author_id_fkey(id, name)`)
+    .select(COMMENT_WITH_AUTHOR_AND_VOTE_SELECT)
     .eq("post_id", postID)
-    .is("parent_id", null)
-    .order("score", { ascending: false })
-    .order("created_at", { ascending: true });
+    .is("parent_id", null);
+
+  const { data: rootRows, error: rootError } = await applyCommentSort(
+    rootQuery,
+    sort,
+  );
 
   if (rootError) {
     console.error(`Error fetching root comments for post ${postID}:`, rootError);
     return createErrorResponse(rootError.message, rootError);
   }
 
-  const roots = rootRows as CommentJoinAuthor[];
+  const roots = rootRows as CommentJoinAuthorAndVote[];
   const rootIds = roots.map(r => r.id);
 
   // 2. Fetch level 2 comments (children of roots)
-  let level2Rows: CommentJoinAuthor[] = [];
+  let level2Rows: CommentJoinAuthorAndVote[] = [];
   if (rootIds.length > 0) {
-    const { data: l2Data, error: l2Error } = await supabase
+    const level2Query = supabase
       .from("comments")
-      .select(`*, author:profiles!comments_author_id_fkey(id, name)`)
-      .in("parent_id", rootIds)
-      .order("created_at", { ascending: true });
+      .select(COMMENT_WITH_AUTHOR_AND_VOTE_SELECT)
+      .in("parent_id", rootIds);
+
+    const { data: l2Data, error: l2Error } = await applyCommentSort(
+      level2Query,
+      sort,
+    );
     
     if (!l2Error) {
-      level2Rows = l2Data as CommentJoinAuthor[];
+      level2Rows = l2Data as CommentJoinAuthorAndVote[];
     }
   }
 
   const commentMap = new Map<string, Comment>();
   const rootComments: CommentRoot[] = [];
 
-  // Helper to map row to Comment object
-  const mapRowToComment = (row: CommentJoinAuthor): Comment => ({
-    id: row.id,
-    parent_id: row.parent_id,
-    author: row.author ?? {
-      id: row.author_id ?? "deleted",
-      name: "Deleted user",
-    },
-    content: row.content,
-    created_at: row.created_at instanceof Date ? row.created_at : new Date(row.created_at),
-    reply_count: row.reply_count,
-    score: row.score,
-    is_deleted: row.is_deleted,
-    replies: [],
-    has_more: row.reply_count > 0 // Initially assume true if reply_count > 0
-  });
-
   // Create root objects
   for (const row of roots) {
-    const comment = mapRowToComment(row);
+    const comment = mapCommentRowToComment(row);
     commentMap.set(row.id, comment);
     rootComments.push(comment);
   }
 
   // Create level 2 objects and attach to roots
   for (const row of level2Rows) {
-    const comment = mapRowToComment(row);
+    const comment = mapCommentRowToComment(row);
     commentMap.set(row.id, comment);
     
     const parent = commentMap.get(row.parent_id!);
@@ -253,57 +266,57 @@ export async function fetchComments(postID: string) {
   return createSuccessResponse(rootComments);
 }
 
-export async function fetchSubComments(parentId: string) {
+export async function fetchSubComments(
+  parentId: string,
+  sort: CommentSort,
+) {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
+  const query = supabase
     .from("comments")
-    .select(`*, author:profiles!comments_author_id_fkey(id, name)`)
-    .eq("parent_id", parentId)
-    .order("created_at", { ascending: true });
+    .select(COMMENT_WITH_AUTHOR_AND_VOTE_SELECT)
+    .eq("parent_id", parentId);
+
+  const { data, error } = await applyCommentSort(query, sort);
 
   if (error) {
     console.error(`Error fetching sub-comments for ${parentId}:`, error);
     return createErrorResponse(error.message, error);
   }
 
-  const rows = data as CommentJoinAuthor[];
-  const comments = rows.map(row => ({
-    id: row.id,
-    parent_id: row.parent_id,
-    author: row.author ?? {
-      id: row.author_id ?? "deleted",
-      name: "Deleted user",
-    },
-    content: row.content,
-    created_at: row.created_at instanceof Date ? row.created_at : new Date(row.created_at),
-    reply_count: row.reply_count,
-    score: row.score,
-    is_deleted: row.is_deleted,
-    replies: [],
-    has_more: row.reply_count > 0
-  }));
+  const rows = data as CommentJoinAuthorAndVote[];
+  const comments = rows.map(mapCommentRowToComment);
 
   return createSuccessResponse(comments);
 }
 
-export async function searchComments(postID: string, search: string) {
+export async function searchComments(postID: string, search: string, sort: CommentSort) {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
+  const query = supabase
     .from("comments")
-    .select(`*, author:profiles!comments_author_id_fkey(id, name)`)
+    .select(COMMENT_WITH_AUTHOR_AND_VOTE_SELECT)
     .eq("post_id", postID)
-    .ilike("content", `%${search}%`)
-    .order("created_at", { ascending: false });
+    .ilike("content", `%${search}%`);
+
+  const { data, error } = await applyCommentSort(query, sort);
 
   if (error) {
     console.error(`Error searching comments in post ${postID}:`, error);
     return createErrorResponse(error.message, error);
   }
 
-  const rows = data as CommentJoinAuthor[];
-  const comments = rows.map(row => ({
+  const rows = data as CommentJoinAuthorAndVote[];
+  const comments = rows.map((row) => ({
+    ...mapCommentRowToComment(row),
+    has_more: false,
+  }));
+
+  return createSuccessResponse(comments);
+}
+
+function mapCommentRowToComment(row: CommentJoinAuthorAndVote): Comment {
+  return {
     id: row.id,
     parent_id: row.parent_id,
     author: row.author ?? {
@@ -311,15 +324,51 @@ export async function searchComments(postID: string, search: string) {
       name: "Deleted user",
     },
     content: row.content,
-    created_at: row.created_at instanceof Date ? row.created_at : new Date(row.created_at),
+    created_at:
+      row.created_at instanceof Date ? row.created_at : new Date(row.created_at),
     reply_count: row.reply_count,
     score: row.score,
     is_deleted: row.is_deleted,
     replies: [],
-    has_more: false
-  }));
+    has_more: row.reply_count > 0,
+    vote_state: getCommentVoteStateFromRow(row),
+  };
+}
 
-  return createSuccessResponse(comments);
+function applyCommentSort<T extends CommentQuery<T>>(
+  query: T,
+  sort: CommentSort,
+) {
+  if (sort === "top-past-year") {
+    query = query.gte("created_at", getIsoDateMonthsAgo(12));
+  } else if (sort === "top-past-month") {
+    query = query.gte("created_at", getIsoDateMonthsAgo(1));
+  }
+
+  if (sort === "newest") {
+    return query.order("created_at", { ascending: false });
+  }
+
+  if (sort === "hot") {
+    return query
+      .order("reply_count", { ascending: false })
+      .order("score", { ascending: false })
+      .order("created_at", { ascending: false });
+  }
+
+  return query
+    .order("score", { ascending: false })
+    .order("created_at", { ascending: false });
+}
+
+function getCommentVoteStateFromRow(
+  row: CommentJoinAuthorAndVote,
+): Comment["vote_state"] {
+  const voteValue = row.user_vote?.[0]?.value;
+
+  if (voteValue === 1) return "up";
+  if (voteValue === -1) return "down";
+  return "not-voted";
 }
 
 export async function fetchProfileRow(uuid: string) {
@@ -405,7 +454,7 @@ export async function createComment(
 
   if (!commentInsert.success) {
     console.error("Validation error creating comment:", {
-      errors: commentInsert.error.errors,
+      errors: commentInsert.error.issues,
       input: { 
         postId, 
         parentId, 
@@ -445,23 +494,4 @@ export async function createComment(
 
   revalidatePath(`/posts/${postId}`);
   return createSuccessResponse(null);
-}
-
-async function getAuthenticatedUserId() {
-  const supabase = await createClient();
-  const userRes = await supabase.auth.getUser();
-
-  if (userRes.error) {
-    return {
-      supabase,
-      userId: null,
-      error: userRes.error,
-    };
-  }
-
-  return {
-    supabase,
-    userId: userRes.data.user.id,
-    error: null,
-  };
 }

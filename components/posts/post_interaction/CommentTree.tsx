@@ -1,22 +1,20 @@
-import { getCommentVoteStates } from "@/lib/actions/updownvote";
+import type { CommentSort } from "@/lib/comments/sort";
 import { CommentRoot } from "@/types/posts";
 import { CommentCard } from "./CommentCard";
 
-interface CommentTreeProps {
+interface Props {
   postId: string;
   comments: CommentRoot[];
+  sort: CommentSort;
   isSearch?: boolean;
 }
 
 export async function CommentTree({
   postId,
   comments,
+  sort,
   isSearch = false,
-}: CommentTreeProps) {
-  const commentIds = collectCommentIds(comments);
-  const voteStatesRes = await getCommentVoteStates(commentIds);
-  const commentVoteStates = voteStatesRes.is_success ? voteStatesRes.data : {};
-
+}: Props) {
   return (
     <div className="p-4 bg-white rounded-lg shadow">
       <h2 className="text-xl font-bold mb-6">
@@ -32,26 +30,10 @@ export async function CommentTree({
           key={comment.id}
           postId={postId}
           comment={comment}
-          commentVoteStates={commentVoteStates}
+          sort={sort}
           hideReplies={isSearch}
         />
       ))}
     </div>
   );
-}
-
-function collectCommentIds(comments: CommentRoot[]) {
-  const ids: string[] = [];
-  const stack = [...comments];
-
-  while (stack.length > 0) {
-    const comment = stack.pop();
-
-    if (!comment) continue;
-
-    ids.push(comment.id);
-    stack.push(...comment.replies);
-  }
-
-  return ids;
 }
