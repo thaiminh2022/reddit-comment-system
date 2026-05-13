@@ -1,7 +1,7 @@
 import { CommentRoot } from "@/types/posts";
 import { CommentCard } from "./CommentCard";
 
-interface CommentTreeProps {
+interface Props {
   postId: string;
   comments: CommentRoot[];
   isSearch?: boolean;
@@ -11,7 +11,7 @@ export async function CommentTree({
   postId,
   comments,
   isSearch = false,
-}: CommentTreeProps) {
+}: Props) {
   return (
     <div className="p-4 bg-white rounded-lg shadow">
       <h2 className="text-xl font-bold mb-6">

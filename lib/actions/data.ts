@@ -19,6 +19,7 @@ import { AuthError, PostgrestError } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { CommentSort } from "../comments/sort";
 
 type CommentJoinAuthorAndVote = CommentJoinAuthor & {
   user_vote?: { value: -1 | 1 }[] | null;
@@ -178,7 +179,7 @@ export async function fetchPostJoinAuthorRow(uuid: string) {
   return createSuccessResponse(dataPost);
 }
 
-export async function fetchComments(postID: string) {
+export async function fetchComments(postID: string, sort: CommentSort) {
   const supabase = await createClient();
 
   // Fetch only top-level (level 1) and second-level (level 2) comments
@@ -273,7 +274,7 @@ export async function fetchSubComments(parentId: string) {
   return createSuccessResponse(comments);
 }
 
-export async function searchComments(postID: string, search: string) {
+export async function searchComments(postID: string, search: string, sort: CommentSort) {
   const supabase = await createClient();
 
   const { data, error } = await supabase

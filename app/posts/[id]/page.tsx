@@ -61,7 +61,7 @@ export default async function Page({
       </div>
 
       <Suspense fallback={<CommentLoadingSkeleton />}>
-        <PostCommentsView search={search} postId={id} />
+        <PostCommentsView search={search} postId={id} sort={sort} />
       </Suspense>
     </div>
   );
