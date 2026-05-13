@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { CommentRoot } from "@/types/posts";
-import { CommentCard } from "./CommentCard";
 import { fetchComments } from "@/lib/actions/data";
 import { CommentSort } from "@/lib/comments/sort";
+import { CommentRoot } from "@/types/posts";
 import { IconLoader2 } from "@tabler/icons-react";
-import CreateComment from "../../CreateComment";
+import { useEffect, useRef, useState } from "react";
+import { CommentCard } from "./CommentCard";
 
 interface Props {
   postId: string;
@@ -69,14 +68,6 @@ export default function InfiniteCommentList({
         <h2 className="text-lg font-bold text-foreground">Comments</h2>
       </div>
 
-      <div className="px-4 mb-8">
-        <CreateComment
-          postId={postId}
-          getClicked={() => false}
-          setClicked={() => {}}
-        />
-      </div>
-
       <div className="px-4 space-y-1">
         {comments.map((comment) => (
           <CommentCard
@@ -90,7 +81,10 @@ export default function InfiniteCommentList({
 
       {cursor && (
         <div ref={loaderRef} className="flex justify-center py-10">
-          <IconLoader2 className="animate-spin text-muted-foreground" size={32} />
+          <IconLoader2
+            className="animate-spin text-muted-foreground"
+            size={32}
+          />
         </div>
       )}
 
