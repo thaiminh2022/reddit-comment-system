@@ -24,6 +24,7 @@ export default async function PostCommentsView({
         <CommentTree
           postId={postId}
           comments={commentsRes.data}
+          sort={sort}
           isSearch={search != undefined && search != ""}
         />
       )}

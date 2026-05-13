@@ -53,7 +53,7 @@ export default function PostCommentSortDropdown({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-44">
-        <DropdownMenuLabel>Sort posts</DropdownMenuLabel>
+        <DropdownMenuLabel>Sort comments</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuRadioGroup value={value} onValueChange={handleValueChange}>
           {commentSortOptions

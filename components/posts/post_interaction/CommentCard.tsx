@@ -1,5 +1,6 @@
 "use client";
 import { fetchSubComments } from "@/lib/actions/data";
+import type { CommentSort } from "@/lib/comments/sort";
 import { Comment, CommentRoot } from "@/types/posts";
 import { useState } from "react";
 import { CommentVotePill } from "./CommentVotePill";
@@ -14,6 +15,7 @@ import {
 interface CommentProps {
   postId: string;
   comment: CommentRoot;
+  sort: CommentSort;
   hideReplies?: boolean;
   depth?: number;
 }
@@ -21,6 +23,7 @@ interface CommentProps {
 export const CommentCard: React.FC<CommentProps> = ({
   postId,
   comment,
+  sort,
   hideReplies = false,
   depth = 0,
 }) => {
@@ -34,7 +37,7 @@ export const CommentCard: React.FC<CommentProps> = ({
 
   const handleLoadMore = async () => {
     setIsLoadingMore(true);
-    const res = await fetchSubComments(comment.id);
+    const res = await fetchSubComments(comment.id, sort);
     if (res.is_success) {
       setExtraReplies(res.data);
       setHasMore(false);
@@ -134,6 +137,7 @@ export const CommentCard: React.FC<CommentProps> = ({
                   key={reply.id}
                   postId={postId}
                   comment={reply}
+                  sort={sort}
                   depth={depth + 1}
                 />
               ))}

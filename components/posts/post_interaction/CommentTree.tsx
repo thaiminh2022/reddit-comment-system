@@ -1,15 +1,18 @@
+import type { CommentSort } from "@/lib/comments/sort";
 import { CommentRoot } from "@/types/posts";
 import { CommentCard } from "./CommentCard";
 
 interface Props {
   postId: string;
   comments: CommentRoot[];
+  sort: CommentSort;
   isSearch?: boolean;
 }
 
 export async function CommentTree({
   postId,
   comments,
+  sort,
   isSearch = false,
 }: Props) {
   return (
@@ -27,6 +30,7 @@ export async function CommentTree({
           key={comment.id}
           postId={postId}
           comment={comment}
+          sort={sort}
           hideReplies={isSearch}
         />
       ))}

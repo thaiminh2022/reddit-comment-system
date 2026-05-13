@@ -32,6 +32,11 @@ type PostCursor = {
   total_comment_count: number;
 };
 
+type CommentQuery<T> = {
+  order: (column: string, options: { ascending: boolean }) => T;
+  gte: (column: string, value: string) => T;
+};
+
 const COMMENT_WITH_AUTHOR_AND_VOTE_SELECT = `
   *,
   author:profiles!comments_author_id_fkey(id, name),
@@ -189,13 +194,16 @@ export async function fetchComments(postID: string, sort: CommentSort) {
   // then fetch children for those roots.
   
   // 1. Fetch root comments
-  const { data: rootRows, error: rootError } = await supabase
+  const rootQuery = supabase
     .from("comments")
     .select(COMMENT_WITH_AUTHOR_AND_VOTE_SELECT)
     .eq("post_id", postID)
-    .is("parent_id", null)
-    .order("score", { ascending: false })
-    .order("created_at", { ascending: true });
+    .is("parent_id", null);
+
+  const { data: rootRows, error: rootError } = await applyCommentSort(
+    rootQuery,
+    sort,
+  );
 
   if (rootError) {
     console.error(`Error fetching root comments for post ${postID}:`, rootError);
@@ -208,11 +216,15 @@ export async function fetchComments(postID: string, sort: CommentSort) {
   // 2. Fetch level 2 comments (children of roots)
   let level2Rows: CommentJoinAuthorAndVote[] = [];
   if (rootIds.length > 0) {
-    const { data: l2Data, error: l2Error } = await supabase
+    const level2Query = supabase
       .from("comments")
       .select(COMMENT_WITH_AUTHOR_AND_VOTE_SELECT)
-      .in("parent_id", rootIds)
-      .order("created_at", { ascending: true });
+      .in("parent_id", rootIds);
+
+    const { data: l2Data, error: l2Error } = await applyCommentSort(
+      level2Query,
+      sort,
+    );
     
     if (!l2Error) {
       level2Rows = l2Data as CommentJoinAuthorAndVote[];
@@ -254,14 +266,18 @@ export async function fetchComments(postID: string, sort: CommentSort) {
   return createSuccessResponse(rootComments);
 }
 
-export async function fetchSubComments(parentId: string) {
+export async function fetchSubComments(
+  parentId: string,
+  sort: CommentSort,
+) {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
+  const query = supabase
     .from("comments")
     .select(COMMENT_WITH_AUTHOR_AND_VOTE_SELECT)
-    .eq("parent_id", parentId)
-    .order("created_at", { ascending: true });
+    .eq("parent_id", parentId);
+
+  const { data, error } = await applyCommentSort(query, sort);
 
   if (error) {
     console.error(`Error fetching sub-comments for ${parentId}:`, error);
@@ -277,12 +293,13 @@ export async function fetchSubComments(parentId: string) {
 export async function searchComments(postID: string, search: string, sort: CommentSort) {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
+  const query = supabase
     .from("comments")
     .select(COMMENT_WITH_AUTHOR_AND_VOTE_SELECT)
     .eq("post_id", postID)
-    .ilike("content", `%${search}%`)
-    .order("created_at", { ascending: false });
+    .ilike("content", `%${search}%`);
+
+  const { data, error } = await applyCommentSort(query, sort);
 
   if (error) {
     console.error(`Error searching comments in post ${postID}:`, error);
@@ -316,6 +333,32 @@ function mapCommentRowToComment(row: CommentJoinAuthorAndVote): Comment {
     has_more: row.reply_count > 0,
     vote_state: getCommentVoteStateFromRow(row),
   };
+}
+
+function applyCommentSort<T extends CommentQuery<T>>(
+  query: T,
+  sort: CommentSort,
+) {
+  if (sort === "top-past-year") {
+    query = query.gte("created_at", getIsoDateMonthsAgo(12));
+  } else if (sort === "top-past-month") {
+    query = query.gte("created_at", getIsoDateMonthsAgo(1));
+  }
+
+  if (sort === "newest") {
+    return query.order("created_at", { ascending: false });
+  }
+
+  if (sort === "hot") {
+    return query
+      .order("reply_count", { ascending: false })
+      .order("score", { ascending: false })
+      .order("created_at", { ascending: false });
+  }
+
+  return query
+    .order("score", { ascending: false })
+    .order("created_at", { ascending: false });
 }
 
 function getCommentVoteStateFromRow(
