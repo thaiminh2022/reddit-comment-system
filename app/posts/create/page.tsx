@@ -50,7 +50,7 @@ export default function Page() {
       <form className="flex flex-col mt-3 gap-y-3" action={action}>
         <Field>
           <FieldLabel htmlFor="post-title">
-            Title <span className="text-red-600">*</span>
+            Title <span className="text-destructive">*</span>
           </FieldLabel>
           <Input
             id="post-title"
@@ -71,7 +71,7 @@ export default function Page() {
           />
         </Field>
         {!state.is_success && (
-          <div className={`rounded-md p-2  bg-red-100`}>
+          <div className="rounded-md bg-destructive/10 p-2 text-destructive">
             {state.is_success
               ? "Post created successfully!"
               : state.message && `Error creating post: ${state.message}`}

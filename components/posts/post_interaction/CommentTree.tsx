@@ -16,9 +16,9 @@ export async function CommentTree({
   isSearch = false,
 }: Props) {
   return (
-    <div className="py-4 bg-white">
+    <div className="bg-card py-4 text-card-foreground">
       <div className="px-4 mb-6">
-        <h2 className="text-lg font-bold text-gray-900">
+        <h2 className="text-lg font-bold text-foreground">
           {isSearch ? "Search Results" : "Comments"}
         </h2>
       </div>

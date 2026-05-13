@@ -44,7 +44,7 @@ export default function InfiniteCommentList({
             const newComments = res.data.comments;
             setComments((prev) => {
               const filteredNew = newComments.filter(
-                (nc: CommentRoot) => !prev.some((pc) => pc.id === nc.id)
+                (nc: CommentRoot) => !prev.some((pc) => pc.id === nc.id),
               );
               return [...prev, ...filteredNew];
             });
@@ -53,7 +53,7 @@ export default function InfiniteCommentList({
           setIsLoading(false);
         }
       },
-      { threshold: 0.1, rootMargin: "200px" }
+      { threshold: 0.1, rootMargin: "200px" },
     );
 
     if (loaderRef.current) {
@@ -64,16 +64,16 @@ export default function InfiniteCommentList({
   }, [cursor, isLoading, postId, sort]);
 
   return (
-    <div className="py-4 bg-white">
+    <div className="bg-card py-4 text-card-foreground">
       <div className="px-4 mb-6">
-        <h2 className="text-lg font-bold text-gray-900">Comments</h2>
+        <h2 className="text-lg font-bold text-foreground">Comments</h2>
       </div>
-      
+
       <div className="px-4 mb-8">
-        <CreateComment 
-          postId={postId} 
+        <CreateComment
+          postId={postId}
           getClicked={() => false}
-          setClicked={() => {}} 
+          setClicked={() => {}}
         />
       </div>
 
@@ -90,12 +90,12 @@ export default function InfiniteCommentList({
 
       {cursor && (
         <div ref={loaderRef} className="flex justify-center py-10">
-          <IconLoader2 className="animate-spin text-gray-400" size={32} />
+          <IconLoader2 className="animate-spin text-muted-foreground" size={32} />
         </div>
       )}
 
       {!cursor && comments.length > 0 && (
-        <div className="text-center py-10 text-gray-400 text-xs font-medium border-t border-gray-100 mt-8 mx-4">
+        <div className="mx-4 mt-8 border-t border-border py-10 text-center text-xs font-medium text-muted-foreground">
           No more comments.
         </div>
       )}

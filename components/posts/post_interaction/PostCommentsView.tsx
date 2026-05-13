@@ -28,7 +28,7 @@ export default async function PostCommentsView({
           />
         )}
         {!commentsRes.is_success && (
-          <div className="rounded-md p-2 bg-red-100 text-red-600 text-sm">
+          <div className="rounded-md bg-destructive/10 p-2 text-sm text-destructive">
             Error searching comments: {commentsRes.message}
           </div>
         )}
@@ -39,7 +39,7 @@ export default async function PostCommentsView({
   const commentsRes = await fetchComments(postId, sort);
 
   return (
-    <div className="bg-white">
+    <div className="bg-card text-card-foreground">
       {commentsRes.is_success ? (
         <InfiniteCommentList
           postId={postId}
@@ -48,7 +48,7 @@ export default async function PostCommentsView({
           sort={sort}
         />
       ) : (
-        <div className="rounded-md p-2 bg-red-100 text-red-600 text-sm">
+        <div className="rounded-md bg-destructive/10 p-2 text-sm text-destructive">
           Error fetching comments: {commentsRes.message}
         </div>
       )}

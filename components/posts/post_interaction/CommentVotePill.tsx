@@ -66,12 +66,14 @@ export function CommentVotePill({
   };
 
   return (
-    <div className="flex items-center bg-gray-100 rounded-full overflow-hidden">
+    <div className="flex items-center overflow-hidden rounded-full bg-muted">
       <Button
         variant="ghost"
         size="icon"
-        className={`h-8 w-8 rounded-none hover:bg-gray-200 transition-colors ${
-          currentVote === "up" ? "text-orange-600 bg-orange-50" : "text-gray-500"
+        className={`h-8 w-8 rounded-none transition-colors hover:bg-accent ${
+          currentVote === "up"
+            ? "bg-orange-50 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400"
+            : "text-muted-foreground"
         }`}
         onClick={handleUpvote}
       >
@@ -82,16 +84,21 @@ export function CommentVotePill({
         )}
       </Button>
       <span className={`text-xs font-bold px-1 min-w-[1.5rem] text-center ${
-        currentVote === "up" ? "text-orange-600" : 
-        currentVote === "down" ? "text-blue-600" : "text-gray-700"
+        currentVote === "up"
+          ? "text-orange-600 dark:text-orange-400"
+          : currentVote === "down"
+            ? "text-blue-600 dark:text-blue-400"
+            : "text-foreground"
       }`}>
         {currentScore}
       </span>
       <Button
         variant="ghost"
         size="icon"
-        className={`h-8 w-8 rounded-none hover:bg-gray-200 transition-colors ${
-          currentVote === "down" ? "text-blue-600 bg-blue-50" : "text-gray-500"
+        className={`h-8 w-8 rounded-none transition-colors hover:bg-accent ${
+          currentVote === "down"
+            ? "bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400"
+            : "text-muted-foreground"
         }`}
         onClick={handleDownVote}
       >

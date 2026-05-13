@@ -19,7 +19,7 @@ export default async function PostRowDisplay({ sort, search }: Props) {
   );
   if (!postsRes.is_success) {
     return (
-      <div className="rounded-md p-2  bg-red-100">
+      <div className="rounded-md bg-destructive/10 p-2 text-destructive">
         Error fetching posts: {postsRes.message}
       </div>
     );

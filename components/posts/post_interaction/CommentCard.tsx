@@ -66,18 +66,18 @@ export const CommentCard: React.FC<CommentProps> = ({
       >
         <button
           onClick={() => setIsExpanded(true)}
-          className="text-gray-400 hover:text-gray-600 transition-colors"
+          className="text-muted-foreground transition-colors hover:text-foreground"
         >
           <IconCirclePlus size={20} />
         </button>
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center text-[10px] font-bold text-gray-500">
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-[10px] font-bold text-muted-foreground">
             {comment.author.name.charAt(0).toUpperCase()}
           </div>
-          <span className="font-bold text-xs text-gray-900">
+          <span className="text-xs font-bold text-foreground">
             {comment.author.name}
           </span>
-          <span className="text-[10px] text-gray-500">
+          <span className="text-[10px] text-muted-foreground">
             • {formatRelativeTime(comment.created_at)}
           </span>
         </div>
@@ -92,12 +92,12 @@ export const CommentCard: React.FC<CommentProps> = ({
       <div className="flex gap-x-2 md:gap-x-3">
         {/* Vertical Line & Avatar Area */}
         <div className="flex flex-col items-center w-7 shrink-0">
-          <div className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center text-[10px] font-bold text-gray-500 mb-2 shrink-0">
+          <div className="mb-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-bold text-muted-foreground">
             {comment.author.name.charAt(0).toUpperCase()}
           </div>
           {!hideReplies && isExpanded && (
             <div
-              className="flex-1 w-px bg-gray-200 hover:bg-orange-400 hover:w-0.5 cursor-pointer transition-all"
+              className="w-px flex-1 cursor-pointer bg-border transition-all hover:w-0.5 hover:bg-orange-400"
               onClick={() => setIsExpanded(false)}
             />
           )}
@@ -106,16 +106,16 @@ export const CommentCard: React.FC<CommentProps> = ({
         {/* Comment Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <span className="font-bold text-xs text-gray-900 truncate">
+            <span className="truncate text-xs font-bold text-foreground">
               {comment.author.name}
             </span>
-            <span className="text-[10px] text-gray-400 shrink-0">
+            <span className="shrink-0 text-[10px] text-muted-foreground">
               • {formatRelativeTime(comment.created_at)}
             </span>
             {!isExpanded && (
               <button
                 onClick={() => setIsExpanded(true)}
-                className="text-gray-400 hover:text-gray-600 transition-colors ml-auto"
+                className="ml-auto text-muted-foreground transition-colors hover:text-foreground"
               >
                 <IconCirclePlus size={18} />
               </button>
@@ -123,11 +123,11 @@ export const CommentCard: React.FC<CommentProps> = ({
           </div>
 
           <div className="pb-2">
-            <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap break-words">
+            <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">
               {comment.content}
             </p>
 
-            <div className="flex items-center gap-x-3 mt-2 text-xs text-gray-500 font-medium">
+            <div className="mt-2 flex items-center gap-x-3 text-xs font-medium text-muted-foreground">
               <CommentVotePill
                 postId={postId}
                 commentId={comment.id}
@@ -137,9 +137,9 @@ export const CommentCard: React.FC<CommentProps> = ({
               {!hideReplies && (
                 <button
                   onClick={() => setClickedReply(true)}
-                  className="flex items-center gap-1 hover:bg-gray-100 px-2 py-1 rounded transition-colors"
+                  className="flex items-center gap-1 rounded px-2 py-1 transition-colors hover:bg-accent hover:text-foreground"
                 >
-                  <IconMessageCircle size={18} className="text-gray-400" />
+                  <IconMessageCircle size={18} className="text-muted-foreground" />
                   <span>Reply</span>
                 </button>
               )}
@@ -183,9 +183,9 @@ export const CommentCard: React.FC<CommentProps> = ({
                   <button
                     onClick={handleLoadMore}
                     disabled={isLoadingMore}
-                    className="flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-gray-800 transition-colors ml-1"
+                    className="ml-1 flex items-center gap-2 text-xs font-bold text-muted-foreground transition-colors hover:text-foreground"
                   >
-                    <div className="text-gray-400">
+                    <div className="text-muted-foreground">
                       {isLoadingMore ? (
                         <IconLoader2 size={16} className="animate-spin" />
                       ) : (

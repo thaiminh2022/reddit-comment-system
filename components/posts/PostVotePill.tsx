@@ -17,7 +17,10 @@ interface VotePillProps {
   voteState: VoteState;
 }
 
-export function PostVotePill({ post, voteState: initialVoteState }: VotePillProps) {
+export function PostVotePill({
+  post,
+  voteState: initialVoteState,
+}: VotePillProps) {
   const [currentScore, setCurrentScore] = useState(post.score);
   const [currentVote, setCurrentVote] = useState(initialVoteState);
 
@@ -30,7 +33,7 @@ export function PostVotePill({ post, voteState: initialVoteState }: VotePillProp
   async function handleVote(nextVote: VoteState) {
     const oldVote = currentVote;
     const oldScore = currentScore;
-    
+
     // Calculate new score based on state change
     const oldVal = voteValue(oldVote);
     const newVal = voteValue(nextVote);
@@ -60,12 +63,14 @@ export function PostVotePill({ post, voteState: initialVoteState }: VotePillProp
   };
 
   return (
-    <div className="flex items-center bg-gray-50 rounded-full px-1 border border-gray-100">
+    <div className="flex h-9.5 items-center rounded-full border border-border bg-muted">
       <Button
         variant="ghost"
         size="icon"
-        className={`h-9 w-9 rounded-full hover:bg-gray-200 transition-colors ${
-          currentVote === "up" ? "text-orange-600 bg-orange-50" : "text-gray-500"
+        className={`h-9 w-9 rounded-full transition-colors hover:bg-accent cursor-pointer ${
+          currentVote === "up"
+            ? "bg-orange-50 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400"
+            : "text-muted-foreground"
         }`}
         onClick={handleUpvote}
       >
@@ -75,17 +80,24 @@ export function PostVotePill({ post, voteState: initialVoteState }: VotePillProp
           <IconArrowBigUp size={24} />
         )}
       </Button>
-      <span className={`text-sm font-bold px-2 min-w-[2rem] text-center ${
-        currentVote === "up" ? "text-orange-600" : 
-        currentVote === "down" ? "text-blue-600" : "text-gray-700"
-      }`}>
+      <span
+        className={`text-sm font-bold px-2 min-w-8 text-center ${
+          currentVote === "up"
+            ? "text-orange-600"
+            : currentVote === "down"
+              ? "text-blue-600 dark:text-blue-400"
+              : "text-foreground"
+        }`}
+      >
         {currentScore}
       </span>
       <Button
         variant="ghost"
         size="icon"
-        className={`h-9 w-9 rounded-full hover:bg-gray-200 transition-colors ${
-          currentVote === "down" ? "text-blue-600 bg-blue-50" : "text-gray-500"
+        className={`h-9 w-9 rounded-full transition-colors hover:bg-accent cursor-pointer ${
+          currentVote === "down"
+            ? "bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400"
+            : "text-muted-foreground"
         }`}
         onClick={handleDownVote}
       >
