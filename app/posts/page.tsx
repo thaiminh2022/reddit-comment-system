@@ -1,5 +1,4 @@
 import LogoutButton from "@/components/LogoutButton";
-import InfinitePostList from "@/components/posts/InfinitePostList";
 import PostSortDropdown from "@/components/posts/PostSortDropdown";
 import SearchBar from "@/components/SearchBar";
 import { Button } from "@/components/ui/button";
@@ -10,14 +9,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { fetchPostJoinAuthorRows } from "@/lib/actions/data";
 import { parsePostSort } from "@/lib/posts/sort";
-import { getPostVoteStates } from "@/lib/actions/updownvote";
-import {
-  IconPencil,
-  IconSortDescending,
-  IconTrendingUp,
-} from "@tabler/icons-react";
+import { IconPencil } from "@tabler/icons-react";
 import Link from "next/link";
 import { Suspense } from "react";
 import PostLoadingSkeleton from "@/components/posts/PostLoadingSkeleton";
