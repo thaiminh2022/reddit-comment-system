@@ -1,5 +1,4 @@
 "use client";
-import type { CommentVoteStates } from "@/lib/actions/updownvote";
 import { fetchSubComments } from "@/lib/actions/data";
 import { Comment, CommentRoot } from "@/types/posts";
 import { useState } from "react";
@@ -8,7 +7,6 @@ import CreateComment from "../../CreateComment";
 import { 
   IconLoader2, 
   IconMessageCircle, 
-  IconPlus, 
   IconMinus,
   IconCirclePlus
 } from "@tabler/icons-react";
@@ -16,7 +14,6 @@ import {
 interface CommentProps {
   postId: string;
   comment: CommentRoot;
-  commentVoteStates: CommentVoteStates;
   hideReplies?: boolean;
   depth?: number;
 }
@@ -24,7 +21,6 @@ interface CommentProps {
 export const CommentCard: React.FC<CommentProps> = ({
   postId,
   comment,
-  commentVoteStates: initialVoteStates,
   hideReplies = false,
   depth = 0,
 }) => {
@@ -105,7 +101,7 @@ export const CommentCard: React.FC<CommentProps> = ({
               postId={postId}
               commentId={comment.id}
               score={comment.score}
-              voteState={initialVoteStates[comment.id] ?? "not-voted"}
+              voteState={comment.vote_state}
             />
             {!hideReplies && (
               <button 
@@ -138,7 +134,6 @@ export const CommentCard: React.FC<CommentProps> = ({
                   key={reply.id}
                   postId={postId}
                   comment={reply}
-                  commentVoteStates={initialVoteStates}
                   depth={depth + 1}
                 />
               ))}

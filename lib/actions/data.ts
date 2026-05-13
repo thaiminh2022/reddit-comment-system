@@ -20,14 +20,31 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
-function encodeCursor(data: any): string {
+type CommentJoinAuthorAndVote = CommentJoinAuthor & {
+  user_vote?: { value: -1 | 1 }[] | null;
+};
+
+type PostCursor = {
+  id: string;
+  created_at: string;
+  score: number;
+  total_comment_count: number;
+};
+
+const COMMENT_WITH_AUTHOR_AND_VOTE_SELECT = `
+  *,
+  author:profiles!comments_author_id_fkey(id, name),
+  user_vote:comment_votes(value)
+`;
+
+function encodeCursor(data: PostCursor): string {
   return Buffer.from(JSON.stringify(data)).toString("base64");
 }
 
-function decodeCursor(cursor: string): any {
+function decodeCursor(cursor: string): PostCursor | null {
   try {
     return JSON.parse(Buffer.from(cursor, "base64").toString("utf-8"));
-  } catch (e) {
+  } catch {
     return null;
   }
 }
@@ -106,7 +123,7 @@ export async function fetchPostJoinAuthorRows(
     return createErrorResponse(error.message, error);
   }
 
-  const posts = (data as any[]).map((row) => ({
+  const posts = (data as PostJoinAuthor[]).map((row) => ({
     ...row,
     created_at: new Date(row.created_at),
   })) as PostJoinAuthor[];
@@ -173,7 +190,7 @@ export async function fetchComments(postID: string) {
   // 1. Fetch root comments
   const { data: rootRows, error: rootError } = await supabase
     .from("comments")
-    .select(`*, author:profiles!comments_author_id_fkey(id, name)`)
+    .select(COMMENT_WITH_AUTHOR_AND_VOTE_SELECT)
     .eq("post_id", postID)
     .is("parent_id", null)
     .order("score", { ascending: false })
@@ -184,53 +201,36 @@ export async function fetchComments(postID: string) {
     return createErrorResponse(rootError.message, rootError);
   }
 
-  const roots = rootRows as CommentJoinAuthor[];
+  const roots = rootRows as CommentJoinAuthorAndVote[];
   const rootIds = roots.map(r => r.id);
 
   // 2. Fetch level 2 comments (children of roots)
-  let level2Rows: CommentJoinAuthor[] = [];
+  let level2Rows: CommentJoinAuthorAndVote[] = [];
   if (rootIds.length > 0) {
     const { data: l2Data, error: l2Error } = await supabase
       .from("comments")
-      .select(`*, author:profiles!comments_author_id_fkey(id, name)`)
+      .select(COMMENT_WITH_AUTHOR_AND_VOTE_SELECT)
       .in("parent_id", rootIds)
       .order("created_at", { ascending: true });
     
     if (!l2Error) {
-      level2Rows = l2Data as CommentJoinAuthor[];
+      level2Rows = l2Data as CommentJoinAuthorAndVote[];
     }
   }
 
   const commentMap = new Map<string, Comment>();
   const rootComments: CommentRoot[] = [];
 
-  // Helper to map row to Comment object
-  const mapRowToComment = (row: CommentJoinAuthor): Comment => ({
-    id: row.id,
-    parent_id: row.parent_id,
-    author: row.author ?? {
-      id: row.author_id ?? "deleted",
-      name: "Deleted user",
-    },
-    content: row.content,
-    created_at: row.created_at instanceof Date ? row.created_at : new Date(row.created_at),
-    reply_count: row.reply_count,
-    score: row.score,
-    is_deleted: row.is_deleted,
-    replies: [],
-    has_more: row.reply_count > 0 // Initially assume true if reply_count > 0
-  });
-
   // Create root objects
   for (const row of roots) {
-    const comment = mapRowToComment(row);
+    const comment = mapCommentRowToComment(row);
     commentMap.set(row.id, comment);
     rootComments.push(comment);
   }
 
   // Create level 2 objects and attach to roots
   for (const row of level2Rows) {
-    const comment = mapRowToComment(row);
+    const comment = mapCommentRowToComment(row);
     commentMap.set(row.id, comment);
     
     const parent = commentMap.get(row.parent_id!);
@@ -258,7 +258,7 @@ export async function fetchSubComments(parentId: string) {
 
   const { data, error } = await supabase
     .from("comments")
-    .select(`*, author:profiles!comments_author_id_fkey(id, name)`)
+    .select(COMMENT_WITH_AUTHOR_AND_VOTE_SELECT)
     .eq("parent_id", parentId)
     .order("created_at", { ascending: true });
 
@@ -267,22 +267,8 @@ export async function fetchSubComments(parentId: string) {
     return createErrorResponse(error.message, error);
   }
 
-  const rows = data as CommentJoinAuthor[];
-  const comments = rows.map(row => ({
-    id: row.id,
-    parent_id: row.parent_id,
-    author: row.author ?? {
-      id: row.author_id ?? "deleted",
-      name: "Deleted user",
-    },
-    content: row.content,
-    created_at: row.created_at instanceof Date ? row.created_at : new Date(row.created_at),
-    reply_count: row.reply_count,
-    score: row.score,
-    is_deleted: row.is_deleted,
-    replies: [],
-    has_more: row.reply_count > 0
-  }));
+  const rows = data as CommentJoinAuthorAndVote[];
+  const comments = rows.map(mapCommentRowToComment);
 
   return createSuccessResponse(comments);
 }
@@ -292,7 +278,7 @@ export async function searchComments(postID: string, search: string) {
 
   const { data, error } = await supabase
     .from("comments")
-    .select(`*, author:profiles!comments_author_id_fkey(id, name)`)
+    .select(COMMENT_WITH_AUTHOR_AND_VOTE_SELECT)
     .eq("post_id", postID)
     .ilike("content", `%${search}%`)
     .order("created_at", { ascending: false });
@@ -302,8 +288,17 @@ export async function searchComments(postID: string, search: string) {
     return createErrorResponse(error.message, error);
   }
 
-  const rows = data as CommentJoinAuthor[];
-  const comments = rows.map(row => ({
+  const rows = data as CommentJoinAuthorAndVote[];
+  const comments = rows.map((row) => ({
+    ...mapCommentRowToComment(row),
+    has_more: false,
+  }));
+
+  return createSuccessResponse(comments);
+}
+
+function mapCommentRowToComment(row: CommentJoinAuthorAndVote): Comment {
+  return {
     id: row.id,
     parent_id: row.parent_id,
     author: row.author ?? {
@@ -311,15 +306,25 @@ export async function searchComments(postID: string, search: string) {
       name: "Deleted user",
     },
     content: row.content,
-    created_at: row.created_at instanceof Date ? row.created_at : new Date(row.created_at),
+    created_at:
+      row.created_at instanceof Date ? row.created_at : new Date(row.created_at),
     reply_count: row.reply_count,
     score: row.score,
     is_deleted: row.is_deleted,
     replies: [],
-    has_more: false
-  }));
+    has_more: row.reply_count > 0,
+    vote_state: getCommentVoteStateFromRow(row),
+  };
+}
 
-  return createSuccessResponse(comments);
+function getCommentVoteStateFromRow(
+  row: CommentJoinAuthorAndVote,
+): Comment["vote_state"] {
+  const voteValue = row.user_vote?.[0]?.value;
+
+  if (voteValue === 1) return "up";
+  if (voteValue === -1) return "down";
+  return "not-voted";
 }
 
 export async function fetchProfileRow(uuid: string) {
@@ -405,7 +410,7 @@ export async function createComment(
 
   if (!commentInsert.success) {
     console.error("Validation error creating comment:", {
-      errors: commentInsert.error.errors,
+      errors: commentInsert.error.issues,
       input: { 
         postId, 
         parentId, 
@@ -445,23 +450,4 @@ export async function createComment(
 
   revalidatePath(`/posts/${postId}`);
   return createSuccessResponse(null);
-}
-
-async function getAuthenticatedUserId() {
-  const supabase = await createClient();
-  const userRes = await supabase.auth.getUser();
-
-  if (userRes.error) {
-    return {
-      supabase,
-      userId: null,
-      error: userRes.error,
-    };
-  }
-
-  return {
-    supabase,
-    userId: userRes.data.user.id,
-    error: null,
-  };
 }
