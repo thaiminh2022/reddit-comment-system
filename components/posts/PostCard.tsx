@@ -1,51 +1,43 @@
-import { fetchUserData } from "@/lib/data";
-import { Post } from "@/types/posts";
-import Link from "next/link";
-import { BiDownvote, BiUpvote } from "react-icons/bi";
-import { CiChat2 } from "react-icons/ci";
-import { Button } from "../ui/button";
+import { formatRelativeTime } from "@/lib/helper";
+import { PostJoinAuthor } from "@/types/db_schema";
 import {
   Card,
   CardAction,
   CardContent,
-  CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "../ui/card";
 
 interface Props {
-  post: Post;
+  post: PostJoinAuthor;
+  children?: React.ReactNode | React.ReactNode[];
 }
 
-export default function PostCard({ post }: Props) {
-  const user = fetchUserData(post.author_id);
+export default function PostCard({ post, children }: Props) {
   return (
     <>
-      <Card>
-        <CardHeader>
-          <CardTitle>{post.title}</CardTitle>
-          <CardDescription>Author: {user.name}</CardDescription>
-
-          <CardAction className="flex flex-col">
-            <Button variant={"outline"}>
-              <BiUpvote />
-            </Button>
-            <p className="w-full text-center">{post.score}</p>
-            <Button variant={"outline"}>
-              <BiDownvote />
-            </Button>
-          </CardAction>
+      <Card className="border-none shadow-sm transition-all hover:ring-1 hover:ring-border">
+        <CardHeader className="pb-2">
+          <div className="mb-1 flex items-center gap-2 text-[10px] text-muted-foreground">
+            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-muted font-bold text-muted-foreground">
+              {post.author?.name?.charAt(0).toUpperCase() || "U"}
+            </div>
+            <span className="cursor-pointer font-bold text-foreground hover:underline">
+              {post.author?.name || "Unknown"}
+            </span>
+            <span>• {formatRelativeTime(post.created_at)}</span>
+          </div>
+          <CardTitle className="text-lg font-bold leading-tight">
+            {post.title}
+          </CardTitle>
         </CardHeader>
-        <CardContent>{post.content}</CardContent>
-        <CardAction className="w-1/2 mx-auto">
-          <Link href={`/posts/${post.id}`}>
-            <Button className="cursor-pointer">
-              <CiChat2 />
-              Comment
-              <p className="font-bold">{post.total_comment_count}</p>
-            </Button>
-          </Link>
-        </CardAction>
+        <CardContent className="text-sm leading-normal py-2">
+          {post.content}
+        </CardContent>
+        <CardFooter className="pt-2">
+          <CardAction className="w-full">{children}</CardAction>
+        </CardFooter>
       </Card>
     </>
   );

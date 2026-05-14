@@ -1,14 +1,65 @@
-import PostCard from "@/components/posts/PostCard";
-import { fetchPosts } from "@/lib/data";
+import LogoutButton from "@/components/LogoutButton";
+import PostLoadingSkeleton from "@/components/posts/PostLoadingSkeleton";
+import PostSortDropdown from "@/components/posts/PostSortDropdown";
+import PostRowDisplay from "@/components/posts/PostsRowDisplay";
+import SearchBar from "@/components/SearchBar";
+import ThemeToggle from "@/components/ThemeToggle";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { parsePostSort } from "@/lib/posts/sort";
+import { IconPencil } from "@tabler/icons-react";
+import Link from "next/link";
+import { Suspense } from "react";
 
-export default async function Page() {
-  const posts = await fetchPosts();
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const params = await searchParams;
+  const sort = parsePostSort(params.sort);
+  const search = typeof params.q === "string" ? params.q : undefined;
 
   return (
-    <div className="flex flex-col gap-y-5">
-      {posts.map((p, i) => (
-        <PostCard post={p} key={i} />
-      ))}
+    <div className="flex flex-col gap-y-5 pb-10">
+      <Card className="mb-3">
+        <CardHeader>
+          <CardTitle className="font-bold text-3xl">Posts</CardTitle>
+          <CardAction>
+            <LogoutButton />
+          </CardAction>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col md:flex-row justify-between items-center w-full gap-4">
+            <div className="flex justify-between items-center w-full md:w-auto gap-4">
+              <Link href={"/posts/create"}>
+                <Button className="cursor-pointer">
+                  <IconPencil />
+                  Create Post
+                </Button>
+              </Link>
+              <ThemeToggle />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex justify-between">
+        <SearchBar placeholder="Search posts..." className="w-full md:w-1/2" />
+        <PostSortDropdown value={sort} />
+      </div>
+      <Suspense
+        key={`${sort}-${search ?? ""}`}
+        fallback={<PostLoadingSkeleton />}
+      >
+        <PostRowDisplay sort={sort} search={search} />
+      </Suspense>
     </div>
   );
 }
