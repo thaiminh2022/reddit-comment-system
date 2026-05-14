@@ -28,13 +28,12 @@ A focused Reddit-style discussion app built around posts, nested comments, votin
 
 ## App Routes
 
-| Route | Purpose |
-| --- | --- |
-| `/` | Username sign-in / account bootstrap |
-| `/posts` | Authenticated post feed with search, sorting, theme toggle, and infinite loading |
-| `/posts/create` | Create a post manually or generate placeholder content |
-| `/posts/[id]` | Post detail view with votes, comment search, comment sorting, and nested replies |
-| `/posts/[id]/[theard_id]` | Focused comment-thread view |
+| Route           | Purpose                                                                          |
+| --------------- | -------------------------------------------------------------------------------- |
+| `/`             | Username sign-in / account bootstrap                                             |
+| `/posts`        | Authenticated post feed with search, sorting, theme toggle, and infinite loading |
+| `/posts/create` | Create a post manually or generate placeholder content                           |
+| `/posts/[id]`   | Post detail view with votes, comment search, comment sorting, and nested replies |
 
 ## Data Model
 
@@ -113,13 +112,3 @@ supabase/
 types/
   db_schema.ts             # Zod schemas and inferred database types
 ```
-
-## Notes for Contributors
-
-This repo uses a newer Next.js version with behavior that may differ from older App Router examples. Before changing framework-level code, check the local docs in:
-
-```text
-node_modules/next/dist/docs/
-```
-
-Keep UI changes aligned with the existing component system. Prefer server components for data loading, client components for interaction, and keyed `Suspense` boundaries where search or sort params should produce visible loading feedback.

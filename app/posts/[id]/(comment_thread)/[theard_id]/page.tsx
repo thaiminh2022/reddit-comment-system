@@ -1,3 +1,6 @@
+import { notFound } from "next/navigation";
+
 export default async function Page() {
-  return <>This is a comment thread</>;
+  notFound();
+  return <>NOT IMPLEMENTED LOL</>;
 }
