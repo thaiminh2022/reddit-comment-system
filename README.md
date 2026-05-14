@@ -1,36 +1,114 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Reddit Comment System
+
+A focused Reddit-style discussion app built around posts, nested comments, voting, search, and fast server-rendered navigation. The goal is not to clone every Reddit feature. It is to make the core conversation loop feel sharp: write a post, sort the feed, open a thread, reply deeply, vote, search, and keep moving.
+
+## What It Does
+
+- Username-based entry flow backed by Supabase Auth and profiles
+- Auth-protected post browsing and post creation
+- Cursor-paginated post feed with infinite loading
+- Nested comment threads with reply support
+- Post and comment voting with persisted user vote state
+- Sort modes for posts and comments: newest, hot, all-time top, yearly top, monthly top
+- Search for posts and comments through indexed database columns
+- Loading skeletons and pending states for route, search, sort, and infinite-scroll transitions
+- Dark/light theme support
+- Supabase Row Level Security policies for profiles, posts, comments, and votes
+
+## Stack
+
+- Next.js 16.2.1 App Router
+- React 19
+- TypeScript
+- Tailwind CSS 4
+- Supabase Auth, Postgres, RLS, and SSR helpers
+- Radix UI primitives with local shadcn-style components
+- Zod for runtime validation
+- Faker for local demo content generation
+
+## App Routes
+
+| Route           | Purpose                                                                          |
+| --------------- | -------------------------------------------------------------------------------- |
+| `/`             | Username sign-in / account bootstrap                                             |
+| `/posts`        | Authenticated post feed with search, sorting, theme toggle, and infinite loading |
+| `/posts/create` | Create a post manually or generate placeholder content                           |
+| `/posts/[id]`   | Post detail view with votes, comment search, comment sorting, and nested replies |
+
+## Data Model
+
+The Supabase schema is centered on five tables:
+
+- `profiles`: public user identity tied to `auth.users`
+- `posts`: post title, content, author, score, deletion flag, comment count
+- `comments`: nested comments through `parent_id`, with per-comment score and reply count
+- `post_votes`: one vote per user per post
+- `comment_votes`: one vote per user per comment
+
+Migrations live in [`supabase/migrations`](./supabase/migrations). Later migrations add uniqueness, search columns, indexes, triggers, and stricter RLS behavior.
 
 ## Getting Started
 
-First, run the development server:
+Install dependencies:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Create `.env.local` with the Supabase values required by the server and browser clients:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+For local database work, also provide the Postgres and Supabase keys your Supabase tooling requires. Do not commit real secrets.
 
-## Learn More
+Run the development server:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+pnpm dev
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Open:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```text
+http://localhost:3000
+```
 
-## Deploy on Vercel
+## Supabase Setup
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Apply the SQL migrations in order from `supabase/migrations`, or run them through the Supabase CLI if your local environment is configured for it.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The authentication flow creates or reuses a Supabase Auth user from a submitted display name, then stores the visible identity in `profiles`. Because this flow uses the admin API to create users, `SUPABASE_SERVICE_ROLE_KEY` is required on the server.
+
+## Scripts
+
+```bash
+pnpm dev      # Start the Next.js development server
+pnpm build    # Build the production app
+pnpm start    # Start the production server after building
+pnpm lint     # Run ESLint
+```
+
+## Project Structure
+
+```text
+app/
+  page.tsx                 # Entry and username auth
+  posts/                   # Protected post routes
+components/
+  posts/                   # Post cards, voting, sorting, infinite feed
+  posts/post_interaction/  # Comment view, comment tree, replies, comment voting
+  ui/                      # Local UI primitives
+lib/
+  actions/                 # Server actions and data access
+  comments/                # Comment sorting helpers
+  posts/                   # Post sorting helpers
+  supabase/                # Browser, server, and proxy Supabase clients
+supabase/
+  migrations/              # Database schema and policy migrations
+types/
+  db_schema.ts             # Zod schemas and inferred database types
+```

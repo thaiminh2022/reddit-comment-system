@@ -106,7 +106,7 @@ export default function HomePage() {
       </Card>
 
       <footer className="mt-12 text-sm text-muted-foreground">
-        © 2026 Nhom 9 hay cl j do quen r
+        © 2026 Nhom 9
       </footer>
     </div>
   );

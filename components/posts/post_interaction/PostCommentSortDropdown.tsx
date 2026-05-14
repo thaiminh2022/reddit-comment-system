@@ -10,13 +10,18 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { IconArrowsSort, IconChevronDown } from "@tabler/icons-react";
+import {
+  IconArrowsSort,
+  IconChevronDown,
+  IconLoader2,
+} from "@tabler/icons-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   CommentSort,
   commentSortOptions,
   getCommentSortLabel,
 } from "@/lib/comments/sort";
+import { useTransition } from "react";
 
 interface PostCommentSortDropdownProps {
   value: CommentSort;
@@ -28,9 +33,12 @@ export default function PostCommentSortDropdown({
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
 
   function handleValueChange(nextValue: string) {
     const nextSort = nextValue as CommentSort;
+    if (nextSort === value) return;
+
     const params = new URLSearchParams(searchParams.toString());
 
     if (nextSort === "newest") {
@@ -40,14 +48,25 @@ export default function PostCommentSortDropdown({
     }
 
     const query = params.toString();
-    router.push(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    startTransition(() => {
+      router.push(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    });
   }
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="cursor-pointer">
-          <IconArrowsSort />
+        <Button
+          variant="outline"
+          className="cursor-pointer"
+          disabled={isPending}
+          aria-busy={isPending}
+        >
+          {isPending ? (
+            <IconLoader2 className="animate-spin" />
+          ) : (
+            <IconArrowsSort />
+          )}
           Sort: {getCommentSortLabel(value)}
           <IconChevronDown data-icon="inline-end" />
         </Button>
@@ -59,7 +78,11 @@ export default function PostCommentSortDropdown({
           {commentSortOptions
             .filter((option) => option.group === "main")
             .map((option) => (
-              <DropdownMenuRadioItem key={option.value} value={option.value}>
+              <DropdownMenuRadioItem
+                key={option.value}
+                value={option.value}
+                disabled={isPending}
+              >
                 {option.label}
               </DropdownMenuRadioItem>
             ))}
@@ -68,7 +91,11 @@ export default function PostCommentSortDropdown({
           {commentSortOptions
             .filter((option) => option.group === "top")
             .map((option) => (
-              <DropdownMenuRadioItem key={option.value} value={option.value}>
+              <DropdownMenuRadioItem
+                key={option.value}
+                value={option.value}
+                disabled={isPending}
+              >
                 {option.label}
               </DropdownMenuRadioItem>
             ))}
