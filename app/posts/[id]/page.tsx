@@ -61,7 +61,10 @@ export default async function Page({
         <PostCommentSortDropdown value={sort} />
       </div>
 
-      <Suspense fallback={<CommentLoadingSkeleton />}>
+      <Suspense
+        key={`${id}-${sort}-${search ?? ""}`}
+        fallback={<CommentLoadingSkeleton />}
+      >
         <PostCommentsView search={search} postId={id} sort={sort} />
       </Suspense>
     </div>

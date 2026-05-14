@@ -15,8 +15,13 @@ import {
   postSortOptions,
   type PostSort,
 } from "@/lib/posts/sort";
-import { IconArrowsSort, IconChevronDown } from "@tabler/icons-react";
+import {
+  IconArrowsSort,
+  IconChevronDown,
+  IconLoader2,
+} from "@tabler/icons-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useTransition } from "react";
 
 interface PostSortDropdownProps {
   value: PostSort;
@@ -26,9 +31,12 @@ export default function PostSortDropdown({ value }: PostSortDropdownProps) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
 
   function handleValueChange(nextValue: string) {
     const nextSort = nextValue as PostSort;
+    if (nextSort === value) return;
+
     const params = new URLSearchParams(searchParams.toString());
 
     if (nextSort === "newest") {
@@ -38,14 +46,25 @@ export default function PostSortDropdown({ value }: PostSortDropdownProps) {
     }
 
     const query = params.toString();
-    router.push(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    startTransition(() => {
+      router.push(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    });
   }
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="cursor-pointer">
-          <IconArrowsSort />
+        <Button
+          variant="outline"
+          className="cursor-pointer"
+          disabled={isPending}
+          aria-busy={isPending}
+        >
+          {isPending ? (
+            <IconLoader2 className="animate-spin" />
+          ) : (
+            <IconArrowsSort />
+          )}
           Sort: {getPostSortLabel(value)}
           <IconChevronDown data-icon="inline-end" />
         </Button>
@@ -60,7 +79,11 @@ export default function PostSortDropdown({ value }: PostSortDropdownProps) {
           {postSortOptions
             .filter((option) => option.group === "main")
             .map((option) => (
-              <DropdownMenuRadioItem key={option.value} value={option.value}>
+              <DropdownMenuRadioItem
+                key={option.value}
+                value={option.value}
+                disabled={isPending}
+              >
                 {option.label}
               </DropdownMenuRadioItem>
             ))}
@@ -69,7 +92,11 @@ export default function PostSortDropdown({ value }: PostSortDropdownProps) {
           {postSortOptions
             .filter((option) => option.group === "top")
             .map((option) => (
-              <DropdownMenuRadioItem key={option.value} value={option.value}>
+              <DropdownMenuRadioItem
+                key={option.value}
+                value={option.value}
+                disabled={isPending}
+              >
                 {option.label}
               </DropdownMenuRadioItem>
             ))}
